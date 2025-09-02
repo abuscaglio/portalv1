@@ -2,7 +2,7 @@ import { useMemo, useCallback, useEffect, useState } from 'react'
 import { DataGrid, GridColDef, GridSortModel, GridFilterModel } from '@mui/x-data-grid';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
-import { setFilterText, setSortModel, setTableData } from '../../store/tableSlice';
+import { setSortModel, setTableData } from '../../store/tableSlice';
 import { TextField, Box, Tooltip } from '@mui/material';
 import { 
   WorkspacePremium,
@@ -16,8 +16,8 @@ import {
   TrackChanges,
   Umbrella
 } from '@mui/icons-material';
-// Import your Firebase service
-import { db } from '../../service/firebase'; // Adjust path as needed
+
+import { db } from '../../service/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 
 interface DataTableProps {
@@ -25,13 +25,17 @@ interface DataTableProps {
   className?: string;
 }
 
+interface ColumnFilters {
+  [key: string]: string;
+}
+
 const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) => {
   const dispatch = useDispatch();
-  const { filteredData, filterText } = useSelector((state: RootState) => state.table);
+  const { filteredData } = useSelector((state: RootState) => state.table);
   const [hasReachedBottom, setHasReachedBottom] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [columnFilters, setColumnFilters] = useState<ColumnFilters>({});
 
-  // Currency formatter function
   const formatCurrency = (value: any): string => {
     if (value === null || value === undefined || value === '') {
       return '$0.00';
@@ -51,7 +55,6 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
     }).format(numValue);
   };
 
-  // Commendation icon mapping
   const commendationIcons: { [key: string]: JSX.Element } = {
     'Top Seller': <WorkspacePremium sx={{ color: 'white', fontSize: '20px' }} />,
     'Sales Leader': <Leaderboard sx={{ color: 'white', fontSize: '20px' }} />,
@@ -65,14 +68,13 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
     'Rainmaker Award': <Umbrella sx={{ color: 'white', fontSize: '20px' }} />,
   };
 
-  // Component to render commendations as icons
   const CommendationsCell = ({ commendations }: { commendations: string[] }) => {
     if (!Array.isArray(commendations) || commendations.length === 0) {
       return null;
     }
 
     return (
-      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'flex-start' }}>
         {commendations.map((commendation, index) => {
           const icon = commendationIcons[commendation];
           if (!icon) return null;
@@ -87,26 +89,21 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
     );
   };
 
-  // Fetch data from Firebase
   const fetchFirestoreData = async () => {
     if (isLoading || hasReachedBottom) return;
     
     setIsLoading(true);
     try {
-      // Replace 'your-collection-name' with your actual collection name
       const querySnapshot = await getDocs(collection(db, 'employees'));
       const data = querySnapshot.docs.map(doc => {
         const docData = doc.data();
         
-        // Convert Firestore Timestamps to serializable format
         const serializedData: any = { id: doc.id };
         
         Object.keys(docData).forEach(key => {
           const value = docData[key];
           
-          // Check if value is a Firestore Timestamp
           if (value && typeof value === 'object' && value.toDate) {
-            // Convert Timestamp to ISO string
             serializedData[key] = value.toDate().toISOString();
           } else {
             serializedData[key] = value;
@@ -116,11 +113,9 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
         return serializedData;
       });
       
-      console.log('Fetched data from Firestore:', data);
-      // Dispatch action to update your Redux store with the fetched data
-      dispatch(setTableData(data)); // Make sure you have this action in your tableSlice
+      dispatch(setTableData(data));
       
-      setHasReachedBottom(true); // Prevent multiple fetches
+      setHasReachedBottom(true);
     } catch (error) {
       console.error('Error fetching data from Firestore:', error);
     } finally {
@@ -128,7 +123,6 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
     }
   };
 
-  // Scroll detection effect
   useEffect(() => {
     fetchFirestoreData();
   }, []);
@@ -227,7 +221,7 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
       filterable: false,
       flex: 1,
       minWidth: 180,
-      align: 'center',
+      align: 'left',
       headerAlign: 'center',
       renderCell: (params) => (
         <CommendationsCell commendations={params.row.commendations || []} />
@@ -236,7 +230,6 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
   ], []);
 
   const handleSortModelChange = useCallback((sortModel: GridSortModel) => {
-    // Transform MUI sort model to match your store's expected format
     const transformedSortModel = sortModel.map(item => ({
       colId: item.field,
       sort: item.sort as "desc" | "asc"
@@ -246,62 +239,115 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
     console.log('Sort changed:', transformedSortModel);
   }, [dispatch]);
 
-  const handleGlobalFilter = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(setFilterText(e.target.value));
-  }, [dispatch]);
-
-  // Filter rows based on global search
   const filteredRows = useMemo(() => {
-    if (!filterText) return filteredData;
+    if (Object.keys(columnFilters).length === 0) return filteredData;
     
-    return filteredData.filter((row: any) =>
-      Object.values(row).some((value: any) =>
-        value?.toString().toLowerCase().includes(filterText.toLowerCase())
-      )
+    return filteredData.filter((row: any) => {
+      return Object.entries(columnFilters).every(([field, filterValue]) => {
+        if (!filterValue) return true;
+        
+        let cellValue = '';
+        
+        if (field === 'city') {
+          cellValue = row.location?.city || '';
+        } else if (field === 'state') {
+          cellValue = row.location?.state || '';
+        } else if (field === 'commendations') {
+          cellValue = Array.isArray(row.commendations) 
+            ? row.commendations.join(' ') 
+            : '';
+        } else {
+          cellValue = row[field] || '';
+        }
+        
+        return cellValue.toString().toLowerCase().includes(filterValue.toLowerCase());
+      });
+    });
+  }, [filteredData, columnFilters]);
+
+  const renderColumnFilters = () => {
+    const filterFields = [
+      { field: 'role', placeholder: 'Filter role...', width: 120 },
+      { field: 'first_name', placeholder: 'Filter name...', width: 120 },
+      { field: 'last_name', placeholder: 'Filter name...', width: 120 },
+      { field: 'city', placeholder: 'Filter city...', width: 120 },
+      { field: 'state', placeholder: 'Filter state...', width: 120 },
+      { field: 'monthly_sales', placeholder: 'Filter sales...', width: 120 },
+      { field: 'monthly_target', placeholder: 'Filter target...', width: 120 },
+      { field: 'yearly_sales', placeholder: 'Filter sales...', width: 120 },
+      { field: 'yearly_target', placeholder: 'Filter target...', width: 120 },
+      { field: 'commendations', placeholder: 'Filter awards...', width: 180 },
+    ];
+
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+        borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+        borderTopLeftRadius: '8px',
+        borderTopRightRadius: '8px',
+        paddingLeft: '52px',
+      }}>
+        {filterFields.map(({ field, placeholder, width }) => (
+          <Box key={field} sx={{ 
+            minWidth: width, 
+            flex: 1, 
+            padding: '8px 4px',
+            borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+            '&:last-child': {
+              borderRight: 'none',
+            }
+          }}>
+            <TextField
+              size="small"
+              placeholder={placeholder}
+              value={columnFilters[field] || ''}
+              onChange={(e) => {
+                setColumnFilters(prev => ({
+                  ...prev,
+                  [field]: e.target.value
+                }));
+              }}
+              sx={{
+                width: '100%',
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '4px',
+                  height: '32px',
+                  '& fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.4)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#9333ea',
+                  },
+                },
+                '& .MuiInputBase-input': {
+                  color: 'white',
+                  fontSize: '12px',
+                  padding: '6px 8px',
+                },
+                '& .MuiInputBase-input::placeholder': {
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  opacity: 1,
+                },
+              }}
+            />
+          </Box>
+        ))}
+      </Box>
     );
-  }, [filteredData, filterText]);
+  };
 
   return (
     <div 
       className={`bg-white/10 backdrop-blur-md rounded-lg p-6 w-full ${className}`}
       style={{ opacity }}
     >
-      {/* Global Filter Input */}
-      <Box className="mb-4">
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search all columns..."
-          value={filterText}
-          onChange={handleGlobalFilter}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              borderRadius: '8px',
-              '& fieldset': {
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-              },
-              '&:hover fieldset': {
-                borderColor: 'rgba(255, 255, 255, 0.5)',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#9333ea',
-                boxShadow: '0 0 0 2px rgba(147, 51, 234, 0.2)',
-              },
-            },
-            '& .MuiInputBase-input': {
-              color: 'white',
-              padding: '12px',
-            },
-            '& .MuiInputBase-input::placeholder': {
-              color: 'rgba(255, 255, 255, 0.7)',
-              opacity: 1,
-            },
-          }}
-        />
-      </Box>
-
-      {/* MUI DataGrid */}
       <Box 
         className="rounded-lg overflow-hidden"
         sx={{ 
@@ -311,6 +357,8 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
             backgroundColor: 'rgba(255, 255, 255, 0.05)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: '8px',
+            borderTopLeftRadius: '0px',
+            borderTopRightRadius: '0px',
           },
           '& .MuiDataGrid-columnHeaders': {
             backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -366,12 +414,9 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
               color: '#9333ea',
             },
           },
-          // Column header menu (context menu) styling
-          '& .MuiDataGrid-menu': {
-            opacity: 1,
-          },
         }}
       >
+        {renderColumnFilters()}
         <DataGrid
           rows={filteredRows}
           columns={columns}
@@ -380,9 +425,10 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
               paginationModel: { page: 0, pageSize: 20 },
             },
           }}
-          pageSizeOptions={[10, 20, 50, 100]}
+          pageSizeOptions={[10, 20, 50]}
           checkboxSelection
           disableRowSelectionOnClick
+          disableColumnMenu
           onSortModelChange={handleSortModelChange}
           getRowId={(row) => row.id}
           sx={{ border: 0 }}
