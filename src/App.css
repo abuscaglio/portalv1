@@ -1,38 +1,77 @@
-.App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
+/* Custom styles for MUI components */
+.parallax-container {
   min-height: 100vh;
+}
+
+.first-page {
+  height: 100vh;
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
 }
 
-.App-link {
-  color: #61dafb;
+.second-page {
+  min-height: 75vh;
+  padding: 32px 20px;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.charts-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 32px;
+  margin-bottom: 48px;
+  width: 100%;
+}
+
+.chart-card {
+  flex: 1;
+  max-width: 400px;
+  height: 320px;
+}
+
+.table-container {
+  width: 100%;
+  margin-bottom: 64px;
+}
+
+.scroll-pill {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Custom MUI DataGrid styles */
+.MuiDataGrid-root {
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.MuiDataGrid-columnHeaders {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+}
+
+.MuiDataGrid-cell {
+  color: white !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.MuiDataGrid-row {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+.MuiDataGrid-row:hover {
+  background: rgba(139, 92, 246, 0.1) !important;
+}
+
+.MuiDataGrid-footerContainer {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: white !important;
 }
