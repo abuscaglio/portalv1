@@ -2,12 +2,10 @@ import { useMemo, useCallback, useEffect, useState, useRef } from 'react'
 import { DataGrid, GridSortModel, } from '@mui/x-data-grid';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
-import { setSortModel, setTableData } from '../../store/tableSlice';
+import { setSortModel } from '../../store/tableSlice';
 import * as Columns from './columns/columns';
 import { TextField, Box } from '@mui/material';
-
-import { db } from '../../service/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { useFirestoreData } from '../../hooks/useFirestoreData';
 
 interface DataTableProps {
   opacity?: number;
@@ -21,11 +19,12 @@ interface ColumnFilters {
 const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) => {
   const dispatch = useDispatch();
   const { filteredData } = useSelector((state: RootState) => state.table);
-  const [hasReachedBottom, setHasReachedBottom] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [columnFilters, setColumnFilters] = useState<ColumnFilters>({});
   const dataGridRef = useRef<HTMLDivElement>(null);
   const [columnWidths, setColumnWidths] = useState<number[]>([]);
+
+  // Use the custom hook instead of local state and fetch function
+  const { isLoading, error, refetch } = useFirestoreData();
 
   const readColumnWidths = useCallback(() => {
     if (dataGridRef.current) {
@@ -89,44 +88,6 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
       };
     }
   }, [readColumnWidths]);
-
-  const fetchFirestoreData = async () => {
-    if (isLoading || hasReachedBottom) return;
-    
-    setIsLoading(true);
-    try {
-      const querySnapshot = await getDocs(collection(db, 'employees'));
-      const data = querySnapshot.docs.map(doc => {
-        const docData = doc.data();
-        
-        const serializedData: any = { id: doc.id };
-        
-        Object.keys(docData).forEach(key => {
-          const value = docData[key];
-          
-          if (value && typeof value === 'object' && value.toDate) {
-            serializedData[key] = value.toDate().toISOString();
-          } else {
-            serializedData[key] = value;
-          }
-        });
-        
-        return serializedData;
-      });
-      
-      dispatch(setTableData(data));
-      
-      setHasReachedBottom(true);
-    } catch (error) {
-      console.error('Error fetching data from Firestore:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchFirestoreData();
-  }, []);
 
   const handleSortModelChange = useCallback((sortModel: GridSortModel) => {
     const transformedSortModel = sortModel.map(item => ({
@@ -518,6 +479,21 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
     );
   };
 
+  // Optional: Show error state
+  if (error) {
+    return (
+      <div className={`bg-white/10 backdrop-blur-md rounded-lg p-6 w-full ${className}`}>
+        <div className="text-red-400">Error: {error}</div>
+        <button 
+          onClick={refetch} 
+          className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div 
       className={`bg-white/10 backdrop-blur-md rounded-lg p-6 w-full ${className}`}
@@ -596,6 +572,7 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
         <DataGrid
           rows={filteredRows}
           columns={Columns.columns}
+          loading={isLoading} // Show loading state
           initialState={{
             pagination: {
               paginationModel: { page: 0, pageSize: 20 },
