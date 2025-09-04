@@ -35,7 +35,7 @@ const BarChart: React.FC<BarChartProps> = ({ opacity = 1, className = '' }) => {
             mb: 2 
           }}
         >
-          Monthly Sales
+          Monthly Sales By Tier
         </Typography>
         <div style={{ flexGrow: 1 }}>
           <ResponsiveContainer width="100%" height="100%">

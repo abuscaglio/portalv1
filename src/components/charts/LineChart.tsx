@@ -35,7 +35,7 @@ const LineChart: React.FC<LineChartProps> = ({ opacity = 1, className = '' }) =>
             mb: 2 
           }}
         >
-         Weekly Sales 
+         Weekly Sales By Tier
         </Typography>
         <div style={{ flexGrow: 1 }}>
           <ResponsiveContainer width="100%" height="100%">

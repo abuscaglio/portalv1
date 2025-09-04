@@ -27,59 +27,68 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
   const dataGridRef = useRef<HTMLDivElement>(null);
   const [columnWidths, setColumnWidths] = useState<number[]>([]);
 
-  // Function to read actual column widths from DataGrid
-  useEffect(() => {
-    const readColumnWidths = () => {
-      if (dataGridRef.current) {
-        const columnHeaders = dataGridRef.current.querySelectorAll('.MuiDataGrid-columnHeader');
-        const widths: number[] = [];
-        
-        columnHeaders.forEach((header) => {
-          widths.push(header.getBoundingClientRect().width);
-        });
-        
-        if (widths.length > 0) {
-          setColumnWidths(widths);
-        }
+  const readColumnWidths = useCallback(() => {
+    if (dataGridRef.current) {
+      const columnHeaders = dataGridRef.current.querySelectorAll('.MuiDataGrid-columnHeader');
+      const widths: number[] = [];
+      
+      columnHeaders.forEach((header) => {
+        widths.push(header.getBoundingClientRect().width);
+      });
+      
+      if (widths.length > 0) {
+        setColumnWidths(widths);
       }
-    };
+    }
+  }, []);
 
-    // Read widths after DataGrid renders
+  // Read column widths after DataGrid renders and on data changes
+  useEffect(() => {
     const timer = setTimeout(readColumnWidths, 200);
-    
-    // Also read on window resize
-    window.addEventListener('resize', readColumnWidths);
-    
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('resize', readColumnWidths);
-    };
-  }, [filteredData]);
+    return () => clearTimeout(timer);
+  }, [filteredData, readColumnWidths]);
 
-  // Re-read column widths when DataGrid layout changes
+  // Handle window resize and DataGrid layout changes
   useEffect(() => {
-    const readColumnWidths = () => {
-      if (dataGridRef.current) {
-        const columnHeaders = dataGridRef.current.querySelectorAll('.MuiDataGrid-columnHeader');
-        const widths: number[] = [];
-        
-        columnHeaders.forEach((header) => {
-          widths.push(header.getBoundingClientRect().width);
-        });
-        
-        if (widths.length > 0) {
-          setColumnWidths(widths);
-        }
-      }
+    const handleResize = () => {
+      // Use a longer delay for resize events to ensure DataGrid has fully adjusted
+      setTimeout(readColumnWidths, 300);
     };
 
-    const observer = new ResizeObserver(readColumnWidths);
+    // Listen for window resize
+    window.addEventListener('resize', handleResize);
+    
+    // Use ResizeObserver for DataGrid container changes
+    const observer = new ResizeObserver(() => {
+      setTimeout(readColumnWidths, 100);
+    });
+    
     if (dataGridRef.current) {
       observer.observe(dataGridRef.current);
     }
 
-    return () => observer.disconnect();
-  }, []);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      observer.disconnect();
+    };
+  }, [readColumnWidths]);
+
+  // Also read column widths when DataGrid columns change (on column resize)
+  useEffect(() => {
+    const handleColumnResize = () => {
+      setTimeout(readColumnWidths, 50);
+    };
+
+    const dataGridElement = dataGridRef.current;
+    if (dataGridElement) {
+      // Listen for column resize events
+      dataGridElement.addEventListener('mouseup', handleColumnResize);
+      
+      return () => {
+        dataGridElement.removeEventListener('mouseup', handleColumnResize);
+      };
+    }
+  }, [readColumnWidths]);
 
   const fetchFirestoreData = async () => {
     if (isLoading || hasReachedBottom) return;
