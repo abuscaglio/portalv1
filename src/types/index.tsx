@@ -6,8 +6,8 @@ export interface PieChartData {
 }
 
 export interface BarChartData {
-  name: string;
-  value: number;
+  month: string;
+  [tierName: string]: number | string; // Dynamic tier names as keys
 }
 
 export interface LineChartData {

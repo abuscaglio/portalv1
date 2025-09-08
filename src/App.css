@@ -31,6 +31,11 @@
   height: 320px;
 }
 
+.bar-chart-card {
+  min-width: 700px !important;
+  width: 700px !important;
+}
+
 .table-container {
   width: 100%;
   margin-bottom: 64px;

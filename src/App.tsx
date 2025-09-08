@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box } from '@mui/material';
+import { useFirestoreData } from './hooks/useFirestoreData';
 import { store } from './store';
 import PieChart from './components/charts/PieChart';
 import BarChart from './components/charts/BarChart';
@@ -42,6 +43,7 @@ const darkTheme = createTheme({
 
 const AppContent: React.FC = () => {
   const [scrollY, setScrollY] = useState<number>(0);
+  const { isLoading, error, refetch } = useFirestoreData();
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -89,7 +91,7 @@ const AppContent: React.FC = () => {
         </Box>
 
         {/* Data Table Section */}
-        <DataTable opacity={contentOpacity} />
+        <DataTable opacity={contentOpacity} fetchError={error} isLoading={isLoading} refetch={refetch} />
 
         {/* Footer Space */}
         <Box sx={{ height: 8 }} />

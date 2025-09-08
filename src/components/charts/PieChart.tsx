@@ -39,6 +39,20 @@ const PieChart: React.FC<PieChartProps> = ({ opacity = 1, className = '' }) => {
     </Box>
   );
 
+  // Custom tooltip formatter function
+  const formatTooltip = (value: number, name: string) => {
+    // Remove "Sales - " prefix from the name if it exists
+    const cleanName = name.replace(/^Sales - /, '');
+    
+    // Format the value as currency with 2 decimal places
+    const formattedValue = `$${value.toLocaleString('en-US', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    })}`;
+    
+    return [formattedValue, cleanName];
+  };
+
   return (
     <Card 
       className={`chart-card ${className}`}
@@ -105,6 +119,7 @@ const PieChart: React.FC<PieChartProps> = ({ opacity = 1, className = '' }) => {
                     borderRadius: '8px',
                     color: '#333'
                   }}
+                  formatter={formatTooltip}
                 />
               </RechartsePieChart>
             </ResponsiveContainer>

@@ -5,18 +5,20 @@ import { RootState } from '../../store';
 import { setSortModel } from '../../store/tableSlice';
 import * as Columns from './columns/columns';
 import { TextField, Box } from '@mui/material';
-import { useFirestoreData } from '../../hooks/useFirestoreData';
 
 interface DataTableProps {
   opacity?: number;
   className?: string;
+  fetchError?: string | null;
+  isLoading: boolean;
+  refetch: Function;
 }
 
 interface ColumnFilters {
   [key: string]: string;
 }
 
-const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) => {
+const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '', fetchError = null, isLoading = false }, refetch) => {
   const dispatch = useDispatch();
   const { filteredData } = useSelector((state: RootState) => state.table);
   const [columnFilters, setColumnFilters] = useState<ColumnFilters>({});
@@ -24,7 +26,7 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
   const [columnWidths, setColumnWidths] = useState<number[]>([]);
 
   // Use the custom hook instead of local state and fetch function
-  const { isLoading, error, refetch } = useFirestoreData();
+  //const { isLoading, error, refetch } = useFirestoreData();
 
   const readColumnWidths = useCallback(() => {
     if (dataGridRef.current) {
@@ -480,10 +482,10 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '' }) =>
   };
 
   // Optional: Show error state
-  if (error) {
+  if (fetchError) {
     return (
       <div className={`bg-white/10 backdrop-blur-md rounded-lg p-6 w-full ${className}`}>
-        <div className="text-red-400">Error: {error}</div>
+        <div className="text-red-400">Error: {fetchError}</div>
         <button 
           onClick={refetch} 
           className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
