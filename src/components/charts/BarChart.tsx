@@ -20,10 +20,8 @@ const BarChart: React.FC<BarChartProps> = ({ opacity = 1, className = '' }) => {
   const { barData, employees, chartMode, selectedEmployeeId } = useSelector((state: RootState) => state.charts);
   const [selectedView, setSelectedView] = useState<string>('By Tier');
 
-  // Get employee options for dropdown
   const employeeOptions = employees.length > 0 ? getEmployeeOptions(employees) : [];
 
-  // Define colors for tiers and individual employees
   const tierColors = {
     'Tier 1': '#8B5CF6',
     'Tier 2': '#A78BFA', 
@@ -32,16 +30,29 @@ const BarChart: React.FC<BarChartProps> = ({ opacity = 1, className = '' }) => {
   };
 
   const individualEmployeeColors = {
-    'Employee': '#10B981', // Green for employee sales
-    'Target': '#F59E0B'    // Amber for target line
+    'Employee': '#DDD6FE',
+    'Target': '#A78BFA'
   };
 
-  // Get all possible data keys from barData for rendering bars
   const getDataKeys = () => {
     if (!barData || barData.length === 0) return [];
     
     const sampleData = barData[0];
-    return Object.keys(sampleData).filter(key => key !== 'month');
+    const allKeys = Object.keys(sampleData).filter(key => key !== 'month');
+    
+    if (chartMode === 'individual') {
+      const nonTargetKeys = allKeys.filter(key => key !== 'Target');
+      const targetKey = allKeys.find(key => key === 'Target');
+      
+      return targetKey ? [...nonTargetKeys, targetKey] : nonTargetKeys;
+    } else {
+      const tierOrder = ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4'];
+      const orderedTiers = tierOrder.filter(tier => allKeys.includes(tier));
+      
+      const remainingKeys = allKeys.filter(key => !tierOrder.includes(key));
+      
+      return [...orderedTiers, ...remainingKeys];
+    }
   };
 
   const handleSelectChange = (event: SelectChangeEvent) => {
@@ -49,13 +60,11 @@ const BarChart: React.FC<BarChartProps> = ({ opacity = 1, className = '' }) => {
     setSelectedView(value);
 
     if (value === 'By Tier') {
-      // Switch back to tier view
       dispatch(setChartMode('tier'));
       if (employees.length > 0) {
         dispatch(setBarDataFromEmployees(employees));
       }
     } else if (value.startsWith('employee-')) {
-      // Individual employee selected
       const employeeId = value.replace('employee-', '');
       const selectedEmployee = employees.find(emp => emp.id === employeeId);
       
@@ -64,21 +73,17 @@ const BarChart: React.FC<BarChartProps> = ({ opacity = 1, className = '' }) => {
         dispatch(setBarDataFromIndividualEmployee(selectedEmployee));
       }
     }
-    // Handle other view types (By Region, By Product, etc.) as needed
   };
 
-  // Get appropriate colors based on chart mode
   const getBarColor = (dataKey: string) => {
     if (chartMode === 'individual') {
       if (dataKey === 'Target') return individualEmployeeColors['Target'];
       return individualEmployeeColors['Employee'];
     } else {
-      // Tier mode - use tier colors or default
       return tierColors[dataKey as keyof typeof tierColors] || '#8B5CF6';
     }
   };
 
-  // Get chart title based on current mode
   const getChartTitle = () => {
     if (chartMode === 'individual' && selectedEmployeeId) {
       const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
@@ -86,7 +91,7 @@ const BarChart: React.FC<BarChartProps> = ({ opacity = 1, className = '' }) => {
         return `Monthly Sales - ${selectedEmployee.first_name} ${selectedEmployee.last_name}`;
       }
     }
-    return 'Monthly Sales (FY:2025)';
+    return 'Monthly Sales By Tier';
   };
 
   return (
@@ -127,6 +132,15 @@ const BarChart: React.FC<BarChartProps> = ({ opacity = 1, className = '' }) => {
           <Select
             value={selectedView}
             onChange={handleSelectChange}
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  opacity: 1,
+                  color: 'black',
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                }
+              }
+            }}
             sx={{
               color: 'white',
               fontSize: '0.75rem',
@@ -149,12 +163,7 @@ const BarChart: React.FC<BarChartProps> = ({ opacity = 1, className = '' }) => {
             }}
           >
             <MenuItem value="By Tier">By Tier</MenuItem>
-            
-            {/* Employee Options */}
             {employeeOptions.length > 0 && [
-              <MenuItem key="divider" disabled sx={{ borderBottom: '1px solid #ccc', py: 0.5 }}>
-                <em>Individual Employees</em>
-              </MenuItem>,
               ...employeeOptions.map((employee) => (
                 <MenuItem key={employee.id} value={`employee-${employee.id}`}>
                   {employee.name} ({employee.role.replace('Sales - ', '')})
@@ -204,15 +213,16 @@ const BarChart: React.FC<BarChartProps> = ({ opacity = 1, className = '' }) => {
                     borderRadius: '8px',
                     color: '#000'
                   }}
+                  labelStyle={{ color: '#000' }}
+                  itemStyle={{ color: '#000' }}
                   formatter={(value: number, name: string) => {
                     if (name === 'Target') {
-                      return [`${value.toLocaleString()} (Target)`, 'Monthly Target'];
+                      return [`$${value.toLocaleString()}`, 'Monthly Target'];
                     }
-                    return [`${value.toLocaleString()}`, name];
+                    return [`$${value.toLocaleString()}`, name];
                   }}
                 />
                 
-                {/* Dynamically render bars based on data keys */}
                 {getDataKeys().map((dataKey) => (
                   <Bar 
                     key={dataKey}
@@ -220,7 +230,6 @@ const BarChart: React.FC<BarChartProps> = ({ opacity = 1, className = '' }) => {
                     fill={getBarColor(dataKey)} 
                     radius={[4, 4, 0, 0]}
                     name={dataKey}
-                    // Make target bar more transparent if it exists
                     opacity={dataKey === 'Target' ? 0.7 : 1}
                   />
                 ))}
