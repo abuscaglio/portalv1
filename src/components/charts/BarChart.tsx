@@ -208,7 +208,7 @@ const BarChart: React.FC<BarChartProps> = ({ opacity = 1, className = '' }) => {
                 />
                 <Tooltip 
                   contentStyle={{
-                    backgroundColor: 'rgba(255, 255, 255, 1)',
+                    backgroundColor: 'rgba(255, 255, 255, .9)',
                     border: 'none',
                     borderRadius: '8px',
                     color: '#000'

@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import * as DataTableUtils from '../utils';
 import { GridColDef } from '@mui/x-data-grid';
 import { Box, Tooltip } from '@mui/material';
@@ -147,11 +146,11 @@ import {
         align: 'right',
         headerAlign: 'right',
         cellClassName: (params) => {
-          const backgroundColor = DataTableUtils.getSalesPerformanceColor(params.row.yearly_sales, params.row.yearly_target);
+          const backgroundColor = DataTableUtils.getSalesPerformanceColor(params.row.yearly_sales, params.row.sales.yearly_target);
           return backgroundColor !== 'transparent' ? 'sales-performance-cell' : '';
         },
         renderCell: (params) => {
-          const backgroundColor = DataTableUtils.getSalesPerformanceColor(params.row.yearly_sales, params.row.yearly_target);
+          const backgroundColor = DataTableUtils.getSalesPerformanceColor(params.row.yearly_sales, params.row.sales.yearly_target);
           return (
             <Box
               sx={{
@@ -170,13 +169,20 @@ import {
         }
       },
       { 
-        field: 'yearly_target', 
-        headerName: 'Yearly Target', 
-        sortable: true, 
+        field: 'yearly_target',
+        headerName: 'Yearly Target',
+        sortable: true,
         filterable: true,
         flex: 1,
         minWidth: 120,
-        valueFormatter: (params) => DataTableUtils.formatCurrency(params.value),
+        type: 'number',
+        valueGetter: (params) => params.row.sales?.yearly_target || 0,
+        valueFormatter: (params) => {
+          if (params.value != null) {
+            return DataTableUtils.formatCurrency(params.value);
+          }
+          return DataTableUtils.formatCurrency(0);
+        },
         align: 'right',
         headerAlign: 'right'
       },

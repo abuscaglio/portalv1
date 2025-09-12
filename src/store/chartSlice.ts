@@ -1,27 +1,29 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { ChartState, PieChartData, BarChartData, LineChartData } from '../types';
 
-// Updated interface for Firestore employee data
+// Updated interface to match your actual Firestore structure
+interface MonthlySales {
+  sold: number;
+  target: number;
+}
+
 interface FirestoreEmployee {
   id: string;
   role: string;
   sales: {
     monthly: {
-      [month: string]: number;
+      [month: string]: MonthlySales;
     };
+    yearly_target: number;
   };
   first_name: string;
   last_name: string;
-  yearly_sales: number;
-  monthly_target: number;
-  monthly_sales: number;
   created_at: string;
   commendations: string[];
   location: {
     city: string;
     state: string;
   };
-  yearly_target: number;
 }
 
 // Function to transform Firestore data for the bar chart (by tier)
@@ -51,9 +53,9 @@ export const transformEmployeeDataForBarChart = (employees: FirestoreEmployee[])
     // Calculate total sales per tier for this month
     Object.keys(tierGroups).forEach(tier => {
       const totalSalesForTier = tierGroups[tier].reduce((sum, employee) => {
-        // Handle the typo in "january" from your data
-        const monthKey = month;
-        const monthlySales = employee.sales.monthly[monthKey] || 0;
+        // Access the sold property from the monthly sales object
+        const monthSalesData = employee.sales.monthly[month];
+        const monthlySales = monthSalesData?.sold || 0;
         return sum + monthlySales;
       }, 0);
       
@@ -68,7 +70,7 @@ export const transformEmployeeDataForBarChart = (employees: FirestoreEmployee[])
   return chartData;
 };
 
-// NEW: Function to transform individual employee data for the bar chart
+// Function to transform individual employee data for the bar chart
 export const transformIndividualEmployeeDataForBarChart = (employee: FirestoreEmployee): BarChartData[] => {
   // Define month order for proper sorting
   const monthOrder = [
@@ -82,14 +84,15 @@ export const transformIndividualEmployeeDataForBarChart = (employee: FirestoreEm
       month: month.charAt(0).toUpperCase() + month.slice(1) // Capitalize month name
     };
 
-    // Get sales for this month
-    const monthlySales = employee.sales.monthly[month] || 0;
+    // Get sales data for this month (sold and target)
+    const monthSalesData = employee.sales.monthly[month];
+    const monthlySales = monthSalesData?.sold || 0;
+    const monthlyTarget = monthSalesData?.target || 0;
+    
     const employeeName = `${employee.first_name} ${employee.last_name}`;
     
     monthData[employeeName] = Math.round(monthlySales * 100) / 100; // Round to 2 decimal places
-    
-    // Optionally include target as a reference line
-    monthData['Target'] = employee.monthly_target || 0;
+    monthData['Target'] = Math.round(monthlyTarget * 100) / 100; // Include monthly target
 
     return monthData;
   });
@@ -97,7 +100,7 @@ export const transformIndividualEmployeeDataForBarChart = (employee: FirestoreEm
   return chartData;
 };
 
-// NEW: Helper function to get employee options for dropdown
+// Helper function to get employee options for dropdown
 export const getEmployeeOptions = (employees: FirestoreEmployee[]): Array<{id: string, name: string, role: string}> => {
   return employees.map(employee => ({
     id: employee.id,
@@ -106,7 +109,29 @@ export const getEmployeeOptions = (employees: FirestoreEmployee[]): Array<{id: s
   })).sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
 };
 
-// NEW: Enhanced state interface
+// Helper function to calculate current month sales for an employee
+export const getCurrentMonthSales = (employee: FirestoreEmployee): { sales: number; target: number } => {
+  const currentMonth = new Date().toLocaleString('default', { month: 'long' }).toLowerCase();
+  const monthData = employee.sales.monthly[currentMonth];
+  
+  return {
+    sales: monthData?.sold || 0,
+    target: monthData?.target || 0
+  };
+};
+
+// Helper function to calculate yearly sales for an employee
+export const getYearlySales = (employee: FirestoreEmployee): { sales: number; target: number } => {
+  const monthlyData = Object.values(employee.sales.monthly);
+  const totalSales = monthlyData.reduce((sum, month) => sum + (month.sold || 0), 0);
+  
+  return {
+    sales: totalSales,
+    target: employee.sales.yearly_target || 0
+  };
+};
+
+// Enhanced state interface
 interface EnhancedChartState extends ChartState {
   selectedEmployeeId: string | null;
   employees: FirestoreEmployee[];
@@ -132,9 +157,6 @@ const chartSlice = createSlice({
   name: 'charts',
   initialState,
   reducers: {
-    setPieData: (state, action: PayloadAction<PieChartData[]>) => {
-      state.pieData = action.payload;
-    },
     setBarData: (state, action: PayloadAction<BarChartData[]>) => {
       state.barData = action.payload;
     },
@@ -170,25 +192,52 @@ const chartSlice = createSlice({
       state.chartMode = 'tier';
       state.selectedEmployeeId = null;
     },
-    // NEW: Set data from individual employee
+    // Set data from individual employee
     setBarDataFromIndividualEmployee: (state, action: PayloadAction<FirestoreEmployee>) => {
       state.barData = transformIndividualEmployeeDataForBarChart(action.payload);
       state.chartMode = 'individual';
       state.selectedEmployeeId = action.payload.id;
     },
-    // NEW: Set chart mode
+    // Set chart mode
     setChartMode: (state, action: PayloadAction<'tier' | 'individual'>) => {
       state.chartMode = action.payload;
     },
-    // NEW: Set selected employee ID
+    // Set selected employee ID
     setSelectedEmployeeId: (state, action: PayloadAction<string | null>) => {
       state.selectedEmployeeId = action.payload;
+    },
+    // Transform and set pie data from employees (e.g., by tier performance)
+    setPieDataFromEmployees: (state, action: PayloadAction<FirestoreEmployee[]>) => {
+      const tierPerformance: { [tier: string]: number } = {};
+      
+      // Define colors for different tiers
+      const tierColors: { [tier: string]: string } = {
+        'Tier 1': '#8B5CF6',
+        'Tier 2': '#A78BFA', 
+        'Tier 3': '#C4B5FD',
+        'Tier 4': '#DDD6FE'
+      };
+      
+      action.payload.forEach(employee => {
+        const tier = employee.role.replace('Sales - ', '');
+        const currentMonthData = getCurrentMonthSales(employee);
+        
+        if (!tierPerformance[tier]) {
+          tierPerformance[tier] = 0;
+        }
+        tierPerformance[tier] += currentMonthData.sales;
+      });
+      
+      state.pieData = Object.entries(tierPerformance).map(([name, value]) => ({
+        name,
+        value: Math.round(value * 100) / 100,
+        color: tierColors[name] || '#888888' // Default color if tier not found
+      }));
     }
   }
 });
 
 export const { 
-  setPieData, 
   setBarData, 
   setLineData, 
   updatePieDataPoint, 
@@ -198,7 +247,8 @@ export const {
   setBarDataFromEmployees,
   setBarDataFromIndividualEmployee,
   setChartMode,
-  setSelectedEmployeeId
+  setSelectedEmployeeId,
+  setPieDataFromEmployees
 } = chartSlice.actions;
 
 export default chartSlice.reducer;

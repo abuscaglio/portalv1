@@ -11,22 +11,25 @@ interface DataTableProps {
   className?: string;
   fetchError?: string | null;
   isLoading: boolean;
-  refetch: Function;
+  refetch: () => void;
 }
 
 interface ColumnFilters {
   [key: string]: string;
 }
 
-const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '', fetchError = null, isLoading = false }, refetch) => {
+const DataTable: React.FC<DataTableProps> = ({ 
+  opacity = 1, 
+  className = '', 
+  fetchError = null, 
+  isLoading = false, 
+  refetch 
+}) => {
   const dispatch = useDispatch();
   const { filteredData } = useSelector((state: RootState) => state.table);
   const [columnFilters, setColumnFilters] = useState<ColumnFilters>({});
   const dataGridRef = useRef<HTMLDivElement>(null);
   const [columnWidths, setColumnWidths] = useState<number[]>([]);
-
-  // Use the custom hook instead of local state and fetch function
-  //const { isLoading, error, refetch } = useFirestoreData();
 
   const readColumnWidths = useCallback(() => {
     if (dataGridRef.current) {
@@ -52,14 +55,11 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '', fetc
   // Handle window resize and DataGrid layout changes
   useEffect(() => {
     const handleResize = () => {
-      // Use a longer delay for resize events to ensure DataGrid has fully adjusted
       setTimeout(readColumnWidths, 300);
     };
 
-    // Listen for window resize
     window.addEventListener('resize', handleResize);
     
-    // Use ResizeObserver for DataGrid container changes
     const observer = new ResizeObserver(() => {
       setTimeout(readColumnWidths, 100);
     });
@@ -82,7 +82,6 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '', fetc
 
     const dataGridElement = dataGridRef.current;
     if (dataGridElement) {
-      // Listen for column resize events
       dataGridElement.addEventListener('mouseup', handleColumnResize);
       
       return () => {
@@ -107,26 +106,105 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '', fetc
       return Object.entries(columnFilters).every(([field, filterValue]) => {
         if (!filterValue) return true;
         
-        // Handle commendations separately due to array structure
-        if (field === 'commendations') {
-          return Array.isArray(row.commendations) 
-            ? row.commendations.some((commendation: string) =>
+        // Handle different field types
+        let cellValue: string = '';
+        
+        switch (field) {
+          case 'commendations':
+            if (Array.isArray(row.commendations)) {
+              return row.commendations.some((commendation: string) =>
                 commendation.toLowerCase().includes(filterValue.toLowerCase())
-              )
-            : false;
+              );
+            }
+            return false;
+            
+          case 'city':
+            cellValue = row.location?.city || '';
+            break;
+            
+          case 'state':
+            cellValue = row.location?.state || '';
+            break;
+            
+          case 'monthly_sales':
+            cellValue = row.monthly_sales?.toString() || '';
+            break;
+            
+          case 'monthly_target':
+            cellValue = row.monthly_target?.toString() || '';
+            break;
+            
+          case 'yearly_sales':
+            cellValue = row.yearly_sales?.toString() || '';
+            break;
+            
+          case 'yearly_target':
+            cellValue = row.sales?.yearly_target?.toString() || '';
+            break;
+            
+          default:
+            cellValue = row[field]?.toString() || '';
         }
         
-        // Get cell value using object property access with fallbacks
-        const cellValue = field === 'city' ? row.location?.city 
-                         : field === 'state' ? row.location?.state
-                         : row[field] || '';
-        
-        return cellValue.toString().toLowerCase().includes(filterValue.toLowerCase());
+        return cellValue.toLowerCase().includes(filterValue.toLowerCase());
       });
     });
   }, [filteredData, columnFilters]);
 
+  // Helper function to create filter TextField
+  const createFilterField = (field: string, placeholder: string, width: number, index: number) => (
+    <Box 
+      key={`filter-${field}`} // Added unique key here
+      sx={{ 
+        padding: '8px', 
+        borderRight: index < 9 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+        width: width || 120,
+        flexShrink: 0
+      }}
+    >
+      <TextField
+        size="small"
+        placeholder={placeholder}
+        value={columnFilters[field] || ''}
+        onChange={(e) => setColumnFilters(prev => ({ ...prev, [field]: e.target.value }))}
+        sx={{
+          width: '100%',
+          '& .MuiOutlinedInput-root': {
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '4px',
+            height: '32px',
+            '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
+            '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.4)' },
+            '&.Mui-focused fieldset': { borderColor: '#9333ea' },
+          },
+          '& .MuiInputBase-input': {
+            color: 'white',
+            fontSize: '12px',
+            padding: '6px 8px',
+          },
+          '& .MuiInputBase-input::placeholder': {
+            color: 'rgba(255, 255, 255, 0.6)',
+            opacity: 1,
+          },
+        }}
+      />
+    </Box>
+  );
+
   const renderColumnFilters = () => {
+    const filterConfig = [
+      { field: 'role', placeholder: 'Filter Role...', index: 0 },
+      { field: 'first_name', placeholder: 'Filter First Name...', index: 1 },
+      { field: 'last_name', placeholder: 'Filter Last Name...', index: 2 },
+      { field: 'city', placeholder: 'Filter City...', index: 3 },
+      { field: 'state', placeholder: 'Filter State...', index: 4 },
+      { field: 'monthly_sales', placeholder: 'Filter Monthly Sales...', index: 5 },
+      { field: 'monthly_target', placeholder: 'Filter Monthly Target...', index: 6 },
+      { field: 'yearly_sales', placeholder: 'Filter Yearly Sales...', index: 7 },
+      { field: 'yearly_target', placeholder: 'Filter Yearly Target...', index: 8 },
+      { field: 'commendations', placeholder: 'Filter Commendations...', index: 9 }
+    ];
+
     return (
       <Box sx={{ 
         display: 'flex',
@@ -137,351 +215,14 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '', fetc
         borderTopLeftRadius: '8px',
         borderTopRightRadius: '8px',
       }}>
-        
-        {/* Filter inputs for each column - using exact widths from DataGrid */}
-        <Box sx={{ 
-          padding: '8px', 
-          borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-          width: columnWidths[0] || 120,
-          flexShrink: 0
-        }}>
-          <TextField
-            size="small"
-            placeholder="Filter Role..."
-            value={columnFilters['role'] || ''}
-            onChange={(e) => setColumnFilters(prev => ({ ...prev, role: e.target.value }))}
-            sx={{
-              width: '100%',
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '4px',
-                height: '32px',
-                '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.4)' },
-                '&.Mui-focused fieldset': { borderColor: '#9333ea' },
-              },
-              '& .MuiInputBase-input': {
-                color: 'white',
-                fontSize: '12px',
-                padding: '6px 8px',
-              },
-              '& .MuiInputBase-input::placeholder': {
-                color: 'rgba(255, 255, 255, 0.6)',
-                opacity: 1,
-              },
-            }}
-          />
-        </Box>
-
-        <Box sx={{ 
-          padding: '8px', 
-          borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-          width: columnWidths[1] || 120,
-          flexShrink: 0
-        }}>
-          <TextField
-            size="small"
-            placeholder="Filter First Name..."
-            value={columnFilters['first_name'] || ''}
-            onChange={(e) => setColumnFilters(prev => ({ ...prev, first_name: e.target.value }))}
-            sx={{
-              width: '100%',
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '4px',
-                height: '32px',
-                '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.4)' },
-                '&.Mui-focused fieldset': { borderColor: '#9333ea' },
-              },
-              '& .MuiInputBase-input': {
-                color: 'white',
-                fontSize: '12px',
-                padding: '6px 8px',
-              },
-              '& .MuiInputBase-input::placeholder': {
-                color: 'rgba(255, 255, 255, 0.6)',
-                opacity: 1,
-              },
-            }}
-          />
-        </Box>
-
-        <Box sx={{ 
-          padding: '8px', 
-          borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-          width: columnWidths[2] || 120,
-          flexShrink: 0
-        }}>
-          <TextField
-            size="small"
-            placeholder="Filter Last Name..."
-            value={columnFilters['last_name'] || ''}
-            onChange={(e) => setColumnFilters(prev => ({ ...prev, last_name: e.target.value }))}
-            sx={{
-              width: '100%',
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '4px',
-                height: '32px',
-                '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.4)' },
-                '&.Mui-focused fieldset': { borderColor: '#9333ea' },
-              },
-              '& .MuiInputBase-input': {
-                color: 'white',
-                fontSize: '12px',
-                padding: '6px 8px',
-              },
-              '& .MuiInputBase-input::placeholder': {
-                color: 'rgba(255, 255, 255, 0.6)',
-                opacity: 1,
-              },
-            }}
-          />
-        </Box>
-
-        <Box sx={{ 
-          padding: '8px', 
-          borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-          width: columnWidths[3] || 120,
-          flexShrink: 0
-        }}>
-          <TextField
-            size="small"
-            placeholder="Filter City..."
-            value={columnFilters['city'] || ''}
-            onChange={(e) => setColumnFilters(prev => ({ ...prev, city: e.target.value }))}
-            sx={{
-              width: '100%',
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '4px',
-                height: '32px',
-                '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.4)' },
-                '&.Mui-focused fieldset': { borderColor: '#9333ea' },
-              },
-              '& .MuiInputBase-input': {
-                color: 'white',
-                fontSize: '12px',
-                padding: '6px 8px',
-              },
-              '& .MuiInputBase-input::placeholder': {
-                color: 'rgba(255, 255, 255, 0.6)',
-                opacity: 1,
-              },
-            }}
-          />
-        </Box>
-
-        <Box sx={{ 
-          padding: '8px', 
-          borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-          width: columnWidths[4] || 120,
-          flexShrink: 0
-        }}>
-          <TextField
-            size="small"
-            placeholder="Filter State..."
-            value={columnFilters['state'] || ''}
-            onChange={(e) => setColumnFilters(prev => ({ ...prev, state: e.target.value }))}
-            sx={{
-              width: '100%',
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '4px',
-                height: '32px',
-                '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.4)' },
-                '&.Mui-focused fieldset': { borderColor: '#9333ea' },
-              },
-              '& .MuiInputBase-input': {
-                color: 'white',
-                fontSize: '12px',
-                padding: '6px 8px',
-              },
-              '& .MuiInputBase-input::placeholder': {
-                color: 'rgba(255, 255, 255, 0.6)',
-                opacity: 1,
-              },
-            }}
-          />
-        </Box>
-
-        <Box sx={{ 
-          padding: '8px', 
-          borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-          width: columnWidths[5] || 120,
-          flexShrink: 0
-        }}>
-          <TextField
-            size="small"
-            placeholder="Filter Monthly Sales..."
-            value={columnFilters['monthly_sales'] || ''}
-            onChange={(e) => setColumnFilters(prev => ({ ...prev, monthly_sales: e.target.value }))}
-            sx={{
-              width: '100%',
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '4px',
-                height: '32px',
-                '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.4)' },
-                '&.Mui-focused fieldset': { borderColor: '#9333ea' },
-              },
-              '& .MuiInputBase-input': {
-                color: 'white',
-                fontSize: '12px',
-                padding: '6px 8px',
-              },
-              '& .MuiInputBase-input::placeholder': {
-                color: 'rgba(255, 255, 255, 0.6)',
-                opacity: 1,
-              },
-            }}
-          />
-        </Box>
-
-        <Box sx={{ 
-          padding: '8px', 
-          borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-          width: columnWidths[6] || 120,
-          flexShrink: 0
-        }}>
-          <TextField
-            size="small"
-            placeholder="Filter Monthly Target..."
-            value={columnFilters['monthly_target'] || ''}
-            onChange={(e) => setColumnFilters(prev => ({ ...prev, monthly_target: e.target.value }))}
-            sx={{
-              width: '100%',
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '4px',
-                height: '32px',
-                '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.4)' },
-                '&.Mui-focused fieldset': { borderColor: '#9333ea' },
-              },
-              '& .MuiInputBase-input': {
-                color: 'white',
-                fontSize: '12px',
-                padding: '6px 8px',
-              },
-              '& .MuiInputBase-input::placeholder': {
-                color: 'rgba(255, 255, 255, 0.6)',
-                opacity: 1,
-              },
-            }}
-          />
-        </Box>
-
-        <Box sx={{ 
-          padding: '8px', 
-          borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-          width: columnWidths[7] || 120,
-          flexShrink: 0
-        }}>
-          <TextField
-            size="small"
-            placeholder="Filter Yearly Sales..."
-            value={columnFilters['yearly_sales'] || ''}
-            onChange={(e) => setColumnFilters(prev => ({ ...prev, yearly_sales: e.target.value }))}
-            sx={{
-              width: '100%',
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '4px',
-                height: '32px',
-                '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.4)' },
-                '&.Mui-focused fieldset': { borderColor: '#9333ea' },
-              },
-              '& .MuiInputBase-input': {
-                color: 'white',
-                fontSize: '12px',
-                padding: '6px 8px',
-              },
-              '& .MuiInputBase-input::placeholder': {
-                color: 'rgba(255, 255, 255, 0.6)',
-                opacity: 1,
-              },
-            }}
-          />
-        </Box>
-
-        <Box sx={{ 
-          padding: '8px', 
-          borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-          width: columnWidths[8] || 120,
-          flexShrink: 0
-        }}>
-          <TextField
-            size="small"
-            placeholder="Filter Yearly Target..."
-            value={columnFilters['yearly_target'] || ''}
-            onChange={(e) => setColumnFilters(prev => ({ ...prev, yearly_target: e.target.value }))}
-            sx={{
-              width: '100%',
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '4px',
-                height: '32px',
-                '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.4)' },
-                '&.Mui-focused fieldset': { borderColor: '#9333ea' },
-              },
-              '& .MuiInputBase-input': {
-                color: 'white',
-                fontSize: '12px',
-                padding: '6px 8px',
-              },
-              '& .MuiInputBase-input::placeholder': {
-                color: 'rgba(255, 255, 255, 0.6)',
-                opacity: 1,
-              },
-            }}
-          />
-        </Box>
-
-        <Box sx={{ 
-          padding: '8px',
-          width: columnWidths[9] || 180,
-          flexShrink: 0
-        }}>
-          <TextField
-            size="small"
-            placeholder="Filter Commendations..."
-            value={columnFilters['commendations'] || ''}
-            onChange={(e) => setColumnFilters(prev => ({ ...prev, commendations: e.target.value }))}
-            sx={{
-              width: '100%',
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '4px',
-                height: '32px',
-                '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.4)' },
-                '&.Mui-focused fieldset': { borderColor: '#9333ea' },
-              },
-              '& .MuiInputBase-input': {
-                color: 'white',
-                fontSize: '12px',
-                padding: '6px 8px',
-              },
-              '& .MuiInputBase-input::placeholder': {
-                color: 'rgba(255, 255, 255, 0.6)',
-                opacity: 1,
-              },
-            }}
-          />
-        </Box>
+        {filterConfig.map(({ field, placeholder, index }) =>
+          createFilterField(field, placeholder, columnWidths[index], index)
+        )}
       </Box>
     );
   };
 
-  // Optional: Show error state
+  // Show error state
   if (fetchError) {
     return (
       <div className={`bg-white/10 backdrop-blur-md rounded-lg p-6 w-full ${className}`}>
@@ -574,7 +315,7 @@ const DataTable: React.FC<DataTableProps> = ({ opacity = 1, className = '', fetc
         <DataGrid
           rows={filteredRows}
           columns={Columns.columns}
-          loading={isLoading} // Show loading state
+          loading={isLoading}
           initialState={{
             pagination: {
               paginationModel: { page: 0, pageSize: 20 },

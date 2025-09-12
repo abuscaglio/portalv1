@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const formatCurrency = (value: any): string => {
     if (value === null || value === undefined || value === '') {
       return '$0.00';
@@ -26,9 +24,9 @@ export const formatCurrency = (value: any): string => {
     
     const percentage = (monthlySales / monthlyTarget) * 100;
     
-    if (percentage <= 33.3) {
+    if (percentage <= 90) {
       return 'rgba(239, 68, 68, 0.6)'; // Red with opacity
-    } else if (percentage <= 66.6) {
+    } else if (percentage <= 95) {
       return 'rgba(234, 179, 8, 0.6)'; // Yellow with opacity
     } else {
       return 'rgba(34, 197, 94, 0.6)'; // Green with opacity

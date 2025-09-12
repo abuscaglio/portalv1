@@ -3,37 +3,13 @@ import { useDispatch } from 'react-redux';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../service/firebase';
 import { setTableData } from '../store/tableSlice';
-import { setPieData, setBarDataFromEmployees } from '../store/chartSlice';
+import {setBarDataFromEmployees, setPieDataFromEmployees } from '../store/chartSlice';
 
 export const useFirestoreData = () => {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
   const [hasReachedBottom, setHasReachedBottom] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const transformSalesDataToPieChart = (employees: any[]) => {
-    const salesByTier = employees.reduce((acc, employee) => {
-      const tier = employee.role || 'Unknown';
-      const yearlySales = employee.yearly_sales || 0;
-      
-      acc[tier] = (acc[tier] || 0) + yearlySales;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const tierColors: Record<string, string> = {
-      'Sales - Tier 1': '#8B5CF6',
-      'Sales - Tier 2': '#A78BFA', 
-      'Sales - Tier 3': '#C4B5FD',
-      'Sales - Tier 4': '#DDD6FE',
-      'Unknown': '#DDD6FE'
-    };
-
-    return Object.entries(salesByTier).map(([tier, totalSales]) => ({
-      name: tier,
-      value: Math.round((totalSales as number) * 100) / 100,
-      color: tierColors[tier] || '#95A5A6'
-    }));
-  };
 
   const fetchFirestoreData = async () => {
     if (isLoading || hasReachedBottom) return;
@@ -64,8 +40,7 @@ export const useFirestoreData = () => {
       dispatch(setTableData(data));
       
       // Update pie chart data
-      const pieChartData = transformSalesDataToPieChart(data);
-      dispatch(setPieData(pieChartData));
+      dispatch(setPieDataFromEmployees(data));
 
       // Update bar chart data
       dispatch(setBarDataFromEmployees(data));
@@ -86,7 +61,7 @@ export const useFirestoreData = () => {
 
   useEffect(() => {
     fetchFirestoreData();
-  }, []);
+  });
 
   return {
     isLoading,

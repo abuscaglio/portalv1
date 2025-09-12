@@ -11,6 +11,28 @@ interface PieChartProps {
 
 const PieChart: React.FC<PieChartProps> = ({ opacity = 1, className = '' }) => {
   const pieData = useSelector((state: RootState) => state.charts.pieData);
+  const employees = useSelector((state: RootState) => state.charts.employees);
+
+  // Calculate total earned and target from employees data
+  const calculateTotals = () => {
+    if (!employees || employees.length === 0) {
+      return { totalEarned: 0, totalTarget: 0 };
+    }
+
+    const currentMonth = new Date().toLocaleString('default', { month: 'long' }).toLowerCase();
+    
+    const totals = employees.reduce((acc, employee) => {
+      const monthData = employee.sales.monthly[currentMonth];
+      return {
+        totalEarned: acc.totalEarned + (monthData?.sold || 0),
+        totalTarget: acc.totalTarget + (monthData?.target || 0)
+      };
+    }, { totalEarned: 0, totalTarget: 0 });
+
+    return totals;
+  };
+
+  const { totalEarned, totalTarget } = calculateTotals();
 
   const CustomLegend = () => (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mr: 2 }}>
@@ -32,7 +54,7 @@ const PieChart: React.FC<PieChartProps> = ({ opacity = 1, className = '' }) => {
               fontSize: '12px'
             }}
           >
-            Tier {index + 1}
+            {entry.name}
           </Typography>
         </Box>
       ))}
@@ -41,16 +63,21 @@ const PieChart: React.FC<PieChartProps> = ({ opacity = 1, className = '' }) => {
 
   // Custom tooltip formatter function
   const formatTooltip = (value: number, name: string) => {
-    // Remove "Sales - " prefix from the name if it exists
-    const cleanName = name.replace(/^Sales - /, '');
-    
     // Format the value as currency with 2 decimal places
     const formattedValue = `$${value.toLocaleString('en-US', { 
       minimumFractionDigits: 2, 
       maximumFractionDigits: 2 
     })}`;
     
-    return [formattedValue, cleanName];
+    return [formattedValue, name];
+  };
+
+  // Format currency for display
+  const formatCurrency = (amount: number) => {
+    return `$${amount.toLocaleString('en-US', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    })}`;
   };
 
   return (
@@ -76,7 +103,7 @@ const PieChart: React.FC<PieChartProps> = ({ opacity = 1, className = '' }) => {
             mb: 1 
           }}
         >
-          Yearly Sales By Tier
+          Monthly Sales By Tier
         </Typography>
         
         {/* Earned and Target text */}
@@ -89,7 +116,7 @@ const PieChart: React.FC<PieChartProps> = ({ opacity = 1, className = '' }) => {
             fontSize: '14px'
           }}
         >
-          Earned: Placeholder -- Target: Placeholder
+          Earned: {formatCurrency(totalEarned)} -- Target: {formatCurrency(totalTarget)}
         </Typography>
 
         <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
