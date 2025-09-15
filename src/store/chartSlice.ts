@@ -100,6 +100,83 @@ export const transformIndividualEmployeeDataForBarChart = (employee: FirestoreEm
   return chartData;
 };
 
+// NEW: Function to transform data for line chart - Target Achievement Rate by Tier
+export const transformEmployeeDataForLineChart = (employees: FirestoreEmployee[]): LineChartData[] => {
+  const monthOrder = [
+    'january', 'february', 'march', 'april', 'may', 'june',
+    'july', 'august', 'september', 'october', 'november', 'december'
+  ];
+
+  // Group employees by tier
+  const tierGroups: { [tier: string]: FirestoreEmployee[] } = {};
+  employees.forEach(employee => {
+    const tier = employee.role.replace('Sales - ', ''); // Clean tier name
+    if (!tierGroups[tier]) {
+      tierGroups[tier] = [];
+    }
+    tierGroups[tier].push(employee);
+  });
+
+  // Calculate achievement rate by month
+  const chartData: LineChartData[] = monthOrder.map(month => {
+    const monthData: any = { 
+      name: month.charAt(0).toUpperCase() + month.slice(1) // Capitalize month name
+    };
+
+    // Calculate achievement rate for each tier
+    Object.keys(tierGroups).forEach(tier => {
+      let totalSold = 0;
+      let totalTarget = 0;
+
+      tierGroups[tier].forEach(employee => {
+        const monthSalesData = employee.sales.monthly[month];
+        if (monthSalesData) {
+          totalSold += monthSalesData.sold || 0;
+          totalTarget += monthSalesData.target || 0;
+        }
+      });
+
+      // Calculate achievement rate as percentage
+      const achievementRate = totalTarget > 0 ? (totalSold / totalTarget) * 100 : 0;
+      monthData[tier] = Math.round(achievementRate * 100) / 100; // Round to 2 decimal places
+    });
+
+    return monthData;
+  });
+
+  return chartData;
+};
+
+// NEW: Function to transform individual employee data for line chart - Target Achievement Rate
+export const transformIndividualEmployeeDataForLineChart = (employee: FirestoreEmployee): LineChartData[] => {
+  const monthOrder = [
+    'january', 'february', 'march', 'april', 'may', 'june',
+    'july', 'august', 'september', 'october', 'november', 'december'
+  ];
+
+  // Transform data by month for individual employee achievement rate
+  const chartData: LineChartData[] = monthOrder.map(month => {
+    const monthData: any = { 
+      name: month.charAt(0).toUpperCase() + month.slice(1) // Capitalize month name
+    };
+
+    // Get sales data for this month (sold and target)
+    const monthSalesData = employee.sales.monthly[month];
+    const monthlySales = monthSalesData?.sold || 0;
+    const monthlyTarget = monthSalesData?.target || 0;
+    
+    // Calculate achievement rate as percentage
+    const achievementRate = monthlyTarget > 0 ? (monthlySales / monthlyTarget) * 100 : 0;
+    const employeeName = `${employee.first_name} ${employee.last_name}`;
+    
+    monthData[employeeName] = Math.round(achievementRate * 100) / 100; // Round to 2 decimal places
+
+    return monthData;
+  });
+
+  return chartData;
+};
+
 // Helper function to get employee options for dropdown
 export const getEmployeeOptions = (employees: FirestoreEmployee[]): Array<{id: string, name: string, role: string}> => {
   return employees.map(employee => ({
@@ -134,23 +211,21 @@ export const getYearlySales = (employee: FirestoreEmployee): { sales: number; ta
 // Enhanced state interface
 interface EnhancedChartState extends ChartState {
   selectedEmployeeId: string | null;
+  selectedLineEmployeeId: string | null; // NEW: For line chart employee selection
   employees: FirestoreEmployee[];
-  chartMode: 'tier' | 'individual'; // Track current display mode
+  chartMode: 'tier' | 'individual'; // Track current display mode for bar chart
+  lineChartMode: 'tier' | 'individual'; // NEW: Track current display mode for line chart
 }
 
 const initialState: EnhancedChartState = {
   pieData: [],
   barData: [],
-  lineData: [
-    { name: 'Week 1', value: 400 },
-    { name: 'Week 2', value: 300 },
-    { name: 'Week 3', value: 600 },
-    { name: 'Week 4', value: 800 },
-    { name: 'Week 5', value: 500 }
-  ],
+  lineData: [],
   selectedEmployeeId: null,
+  selectedLineEmployeeId: null,
   employees: [],
-  chartMode: 'tier'
+  chartMode: 'tier',
+  lineChartMode: 'tier'
 };
 
 const chartSlice = createSlice({
@@ -198,13 +273,34 @@ const chartSlice = createSlice({
       state.chartMode = 'individual';
       state.selectedEmployeeId = action.payload.id;
     },
+    // NEW: Set line chart data from employees (tier view)
+    setLineDataFromEmployees: (state, action: PayloadAction<FirestoreEmployee[]>) => {
+      state.employees = action.payload;
+      state.lineData = transformEmployeeDataForLineChart(action.payload);
+      state.lineChartMode = 'tier';
+      state.selectedLineEmployeeId = null;
+    },
+    // NEW: Set line chart data from individual employee
+    setLineDataFromIndividualEmployee: (state, action: PayloadAction<FirestoreEmployee>) => {
+      state.lineData = transformIndividualEmployeeDataForLineChart(action.payload);
+      state.lineChartMode = 'individual';
+      state.selectedLineEmployeeId = action.payload.id;
+    },
     // Set chart mode
     setChartMode: (state, action: PayloadAction<'tier' | 'individual'>) => {
       state.chartMode = action.payload;
     },
+    // NEW: Set line chart mode
+    setLineChartMode: (state, action: PayloadAction<'tier' | 'individual'>) => {
+      state.lineChartMode = action.payload;
+    },
     // Set selected employee ID
     setSelectedEmployeeId: (state, action: PayloadAction<string | null>) => {
       state.selectedEmployeeId = action.payload;
+    },
+    // NEW: Set selected line chart employee ID
+    setSelectedLineEmployeeId: (state, action: PayloadAction<string | null>) => {
+      state.selectedLineEmployeeId = action.payload;
     },
     // Transform and set pie data from employees (e.g., by tier performance)
     setPieDataFromEmployees: (state, action: PayloadAction<FirestoreEmployee[]>) => {
@@ -246,8 +342,12 @@ export const {
   setEmployees,
   setBarDataFromEmployees,
   setBarDataFromIndividualEmployee,
+  setLineDataFromEmployees, // NEW
+  setLineDataFromIndividualEmployee, // NEW
   setChartMode,
+  setLineChartMode, // NEW
   setSelectedEmployeeId,
+  setSelectedLineEmployeeId, // NEW
   setPieDataFromEmployees
 } = chartSlice.actions;
 

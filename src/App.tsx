@@ -9,6 +9,7 @@ import BarChart from './components/charts/BarChart';
 import LineChart from './components/charts/LineChart';
 import DataTable from './components/table/DataTable';
 import ScrollPill from './components/ui/ScrollPill';
+import MainLogo from './components/ui/MainLogo';
 import './App.css';
 
 // Create MUI dark theme
@@ -69,7 +70,7 @@ const AppContent: React.FC = () => {
         className="first-page"
         sx={backgroundStyle}
       >
-        {/* Empty content as requested */}
+        <MainLogo/>
         
         {/* Scroll Down Pill */}
         <ScrollPill opacity={pillOpacity} />

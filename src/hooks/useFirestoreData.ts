@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../service/firebase';
 import { setTableData } from '../store/tableSlice';
-import {setBarDataFromEmployees, setPieDataFromEmployees } from '../store/chartSlice';
+import {setBarDataFromEmployees, setPieDataFromEmployees, setLineDataFromEmployees } from '../store/chartSlice';
 
 export const useFirestoreData = () => {
   const dispatch = useDispatch();
@@ -44,6 +44,8 @@ export const useFirestoreData = () => {
 
       // Update bar chart data
       dispatch(setBarDataFromEmployees(data));
+
+      dispatch(setLineDataFromEmployees(data));
       
       setHasReachedBottom(true);
     } catch (error) {
