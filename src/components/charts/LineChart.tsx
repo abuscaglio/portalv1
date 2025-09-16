@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Card, CardContent, Typography, FormControl, Select, MenuItem, SelectChangeEvent } from '@mui/material';
+import { Card, CardContent, Typography, SelectChangeEvent } from '@mui/material';
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
@@ -10,6 +10,7 @@ import {
   setSelectedLineEmployeeId,
   getEmployeeOptions 
 } from '../../store/chartSlice';
+import ChartSelect, { SelectOption } from '../ui/ChartSelect';
 
 interface LineChartProps {
   opacity?: number;
@@ -30,6 +31,27 @@ const LineChart: React.FC<LineChartProps> = ({ opacity = 1, className = '' }) =>
     }
   }, [employees, lineChartMode, lineData.length, dispatch]);
 
+  // Get employee options for dropdown
+  const employeeOptions = getEmployeeOptions(employees);
+
+  // Create options for ChartSelect
+  const getSelectOptions = (): SelectOption[] => {
+    const options: SelectOption[] = [
+      { value: 'tier', label: 'By Tier' }
+    ];
+
+    if (employeeOptions.length > 0) {
+      const employeeSelectOptions = employeeOptions.map(employee => ({
+        value: employee.id,
+        label: `${employee.name} (${employee.role.replace('Sales - ', '')})`,
+      }));
+      
+      options.push(...employeeSelectOptions);
+    }
+
+    return options;
+  };
+
   const handleViewChange = (event: SelectChangeEvent<string>) => {
     const value = event.target.value;
     
@@ -47,9 +69,6 @@ const LineChart: React.FC<LineChartProps> = ({ opacity = 1, className = '' }) =>
     }
   };
 
-  // Get employee options for dropdown
-  const employeeOptions = getEmployeeOptions(employees);
-
   // Get unique keys from data for dynamic line rendering (excluding 'name')
   const getDataKeys = () => {
     if (lineData.length === 0) return [];
@@ -59,7 +78,6 @@ const LineChart: React.FC<LineChartProps> = ({ opacity = 1, className = '' }) =>
 
   // Colors for different tiers/employees
   const getLineColor = (key: string, index: number) => {
-    
     // Tier-specific colors
     if (key === 'Tier 1') return '#8B5CF6';
     if (key === 'Tier 2') return '#A78BFA';
@@ -73,6 +91,11 @@ const LineChart: React.FC<LineChartProps> = ({ opacity = 1, className = '' }) =>
   // Custom tooltip formatter
   const formatTooltip = (value: any, name: string) => {
     return [`${Number(value).toFixed(1)}%`, name];
+  };
+
+  // Get current select value
+  const getCurrentSelectValue = () => {
+    return lineChartMode === 'tier' ? 'tier' : selectedLineEmployeeId || '';
   };
 
   return (
@@ -102,56 +125,14 @@ const LineChart: React.FC<LineChartProps> = ({ opacity = 1, className = '' }) =>
           Target Achievement Rate Over Time
         </Typography>
         
-        <FormControl 
-          size="small" 
-          sx={{ 
-            mb: 2, 
-            alignSelf: 'center',
-            minWidth: 160,
-            maxWidth: 160
-          }}
-        >
-          <Select
-            value={lineChartMode === 'tier' ? 'tier' : selectedLineEmployeeId || ''}
-            onChange={handleViewChange}
-            MenuProps={{
-              PaperProps: {
-                sx: {
-                  opacity: 1,
-                  color: 'black',
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                }
-              }
-            }}
-            sx={{
-              color: 'white',
-              fontSize: '0.75rem',
-              height: 32,
-              '& .MuiOutlinedInput-input': {
-                padding: '6px 14px',
-              },
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-              },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.5)',
-              },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.7)',
-              },
-              '& .MuiSelect-icon': {
-                color: 'white',
-              },
-            }}
-          >
-            <MenuItem value="tier">By Tier</MenuItem>
-            {employeeOptions.map((employee: {id: string, name: string, role: string}) => (
-              <MenuItem key={employee.id} value={employee.id}>
-                {employee.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <ChartSelect
+          value={getCurrentSelectValue()}
+          onChange={handleViewChange}
+          options={getSelectOptions()}
+          placeholder="Select view"
+          minWidth={160}
+          maxWidth={250}
+        />
         
         <div style={{ flexGrow: 1 }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -181,12 +162,13 @@ const LineChart: React.FC<LineChartProps> = ({ opacity = 1, className = '' }) =>
                   backgroundColor: 'rgba(255, 255, 255, 0.9)',
                   border: 'none',
                   borderRadius: '8px',
-                  color: '#333'
+                  color: '#333',
                 }}
+                labelStyle={{ color: '#000' }}
+                itemStyle={{ color: '#000' }}
                 formatter={formatTooltip}
               />
 
-              
               {/* Render lines dynamically based on data keys */}
               {getDataKeys().map((key, index) => (
                 <Line

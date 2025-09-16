@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import QuadrantPopup from './QuadrantPopup';
 import './MainLogo.css';
 
 interface LogoProps {
@@ -112,45 +113,34 @@ const MainLogo: React.FC<LogoProps> = ({ className = '' }) => {
         </div>
       </div>
       
-      {/* Upper Left Quadrant Component */}
-      <div 
-        className={`main-logo-quadrant-component upper-left ${activeQuadrant === 'upper-left' ? 'visible' : ''}`}
-      >
-        <div className="quadrant-content">
-          <h3>Skills & Technologies</h3>
-          <p>React, TypeScript, Node.js, Python</p>
-        </div>
-      </div>
+      {/* Quadrant Popups using the universal component */}
+      <QuadrantPopup
+        position="upper-left"
+        isVisible={activeQuadrant === 'upper-left'}
+        title="Skills & Technologies"
+        content="React, TypeScript, Node.js, Python"
+      />
 
-      {/* Upper Right Quadrant Component */}
-      <div 
-        className={`main-logo-quadrant-component upper-right ${activeQuadrant === 'upper-right' ? 'visible' : ''}`}
-      >
-        <div className="quadrant-content">
-          <h3>Experience</h3>
-          <p>5+ years in full-stack development</p>
-        </div>
-      </div>
+      <QuadrantPopup
+        position="upper-right"
+        isVisible={activeQuadrant === 'upper-right'}
+        title="Experience"
+        content="5+ years in full-stack development"
+      />
 
-      {/* Lower Right Quadrant Component */}
-      <div 
-        className={`main-logo-quadrant-component lower-right ${activeQuadrant === 'lower-right' ? 'visible' : ''}`}
-      >
-        <div className="quadrant-content">
-          <h3>Projects</h3>
-          <p>Web apps, APIs, mobile solutions</p>
-        </div>
-      </div>
+      <QuadrantPopup
+        position="lower-right"
+        isVisible={activeQuadrant === 'lower-right'}
+        title="Projects"
+        content="Web apps, APIs, mobile solutions"
+      />
 
-      {/* Lower Left Quadrant Component */}
-      <div 
-        className={`main-logo-quadrant-component lower-left ${activeQuadrant === 'lower-left' ? 'visible' : ''}`}
-      >
-        <div className="quadrant-content">
-          <h3>Contact</h3>
-          <p>Let's build something amazing!</p>
-        </div>
-      </div>
+      <QuadrantPopup
+        position="lower-left"
+        isVisible={activeQuadrant === 'lower-left'}
+        title="Contact"
+        content="Let's build something amazing!"
+      />
     </div>
   );
 };

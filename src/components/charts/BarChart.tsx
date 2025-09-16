@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, CardContent, Typography, Select, MenuItem, FormControl, SelectChangeEvent } from '@mui/material';
+import { Card, CardContent, Typography, SelectChangeEvent } from '@mui/material';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
@@ -8,7 +8,8 @@ import {
   setBarDataFromIndividualEmployee, 
   setChartMode,
   getEmployeeOptions 
-} from '../../store/chartSlice'; // Adjust import path as needed
+} from '../../store/chartSlice';
+import ChartSelect, { SelectOption } from '../ui/ChartSelect';
 
 interface BarChartProps {
   opacity?: number;
@@ -21,6 +22,24 @@ const BarChart: React.FC<BarChartProps> = ({ opacity = 1, className = '' }) => {
   const [selectedView, setSelectedView] = useState<string>('By Tier');
 
   const employeeOptions = employees.length > 0 ? getEmployeeOptions(employees) : [];
+
+  // Create options for ChartSelect
+  const getSelectOptions = (): SelectOption[] => {
+    const options: SelectOption[] = [
+      { value: 'By Tier', label: 'By Tier' }
+    ];
+
+    if (employeeOptions.length > 0) {
+      const employeeSelectOptions = employeeOptions.map(employee => ({
+        value: `employee-${employee.id}`,
+        label: `${employee.name} (${employee.role.replace('Sales - ', '')})`,
+      }));
+      
+      options.push(...employeeSelectOptions);
+    }
+
+    return options;
+  };
 
   const tierColors = {
     'Tier 1': '#8B5CF6',
@@ -55,7 +74,7 @@ const BarChart: React.FC<BarChartProps> = ({ opacity = 1, className = '' }) => {
     }
   };
 
-  const handleSelectChange = (event: SelectChangeEvent) => {
+  const handleSelectChange = (event: SelectChangeEvent<string>) => {
     const value = event.target.value;
     setSelectedView(value);
 
@@ -121,57 +140,12 @@ const BarChart: React.FC<BarChartProps> = ({ opacity = 1, className = '' }) => {
           {getChartTitle()}
         </Typography>
         
-        <FormControl 
-          size="small" 
-          sx={{ 
-            mb: 2, 
-            alignSelf: 'center',
-            minWidth: 160
-          }}
-        >
-          <Select
-            value={selectedView}
-            onChange={handleSelectChange}
-            MenuProps={{
-              PaperProps: {
-                sx: {
-                  opacity: 1,
-                  color: 'black',
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                }
-              }
-            }}
-            sx={{
-              color: 'white',
-              fontSize: '0.75rem',
-              height: 32,
-              '& .MuiOutlinedInput-input': {
-                padding: '6px 14px',
-              },
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-              },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.5)',
-              },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.7)',
-              },
-              '& .MuiSelect-icon': {
-                color: 'white',
-              },
-            }}
-          >
-            <MenuItem value="By Tier">By Tier</MenuItem>
-            {employeeOptions.length > 0 && [
-              ...employeeOptions.map((employee) => (
-                <MenuItem key={employee.id} value={`employee-${employee.id}`}>
-                  {employee.name} ({employee.role.replace('Sales - ', '')})
-                </MenuItem>
-              ))
-            ]}
-          </Select>
-        </FormControl>
+        <ChartSelect
+          value={selectedView}
+          onChange={handleSelectChange}
+          options={getSelectOptions()}
+          placeholder="Select view"
+        />
         
         <div style={{ flexGrow: 1 }}>
           {barData.length === 0 ? (
