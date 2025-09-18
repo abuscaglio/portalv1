@@ -24,7 +24,6 @@ const LineChart: React.FC<LineChartProps> = ({ opacity = 1, className = '' }) =>
   const lineChartMode = useSelector((state: RootState) => state.charts.lineChartMode);
   const selectedLineEmployeeId = useSelector((state: RootState) => state.charts.selectedLineEmployeeId);
 
-  // Initialize with tier data when employees are available
   useEffect(() => {
     if (employees.length > 0 && lineChartMode === 'tier' && lineData.length === 0) {
       dispatch(setLineDataFromEmployees(employees));
@@ -59,7 +58,6 @@ const LineChart: React.FC<LineChartProps> = ({ opacity = 1, className = '' }) =>
       dispatch(setLineChartMode('tier'));
       dispatch(setLineDataFromEmployees(employees));
     } else {
-      // Individual employee selected
       const employee = employees.find(emp => emp.id === value);
       if (employee) {
         dispatch(setLineChartMode('individual'));
@@ -76,24 +74,19 @@ const LineChart: React.FC<LineChartProps> = ({ opacity = 1, className = '' }) =>
     return Object.keys(firstDataPoint).filter(key => key !== 'name');
   };
 
-  // Colors for different tiers/employees
   const getLineColor = (key: string, index: number) => {
-    // Tier-specific colors
     if (key === 'Tier 1') return '#8B5CF6';
     if (key === 'Tier 2') return '#A78BFA';
     if (key === 'Tier 3') return '#C4B5FD';
     if (key === 'Tier 4') return '#DDD6FE';
     
-    // For individual employees, use a single color
     return '#A78BFA';
   };
 
-  // Custom tooltip formatter
   const formatTooltip = (value: any, name: string) => {
     return [`${Number(value).toFixed(1)}%`, name];
   };
 
-  // Get current select value
   const getCurrentSelectValue = () => {
     return lineChartMode === 'tier' ? 'tier' : selectedLineEmployeeId || '';
   };
@@ -105,7 +98,7 @@ const LineChart: React.FC<LineChartProps> = ({ opacity = 1, className = '' }) =>
         background: 'rgba(255, 255, 255, 0.1)',
         backdropFilter: 'blur(10px)',
         borderRadius: 3,
-        height: 320,
+        height: 265,
         opacity,
         border: '1px solid rgba(255, 255, 255, 0.1)'
       }}
@@ -168,8 +161,6 @@ const LineChart: React.FC<LineChartProps> = ({ opacity = 1, className = '' }) =>
                 itemStyle={{ color: '#000' }}
                 formatter={formatTooltip}
               />
-
-              {/* Render lines dynamically based on data keys */}
               {getDataKeys().map((key, index) => (
                 <Line
                   key={key}

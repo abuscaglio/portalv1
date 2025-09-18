@@ -87,7 +87,7 @@ const PieChart: React.FC<PieChartProps> = ({ opacity = 1, className = '' }) => {
         background: 'rgba(255, 255, 255, 0.1)',
         backdropFilter: 'blur(10px)',
         borderRadius: 3,
-        height: 320,
+        height: 265,
         opacity,
         border: '1px solid rgba(255, 255, 255, 0.1)'
       }}

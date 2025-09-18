@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box } from '@mui/material';
+import { CssBaseline, Box, Tabs, Tab } from '@mui/material';
 import { useFirestoreData } from './hooks/useFirestoreData';
 import { store } from './store';
 import PieChart from './components/charts/PieChart';
@@ -10,7 +10,9 @@ import LineChart from './components/charts/LineChart';
 import DataTable from './components/table/DataTable';
 import ScrollPill from './components/ui/ScrollPill';
 import MainLogo from './components/ui/MainLogo';
+import SalesInsightsDashboard from './components/SalesInsights/SalesInsightsDashboard';
 import './App.css';
+
 
 // Create MUI dark theme
 const darkTheme = createTheme({
@@ -39,11 +41,59 @@ const darkTheme = createTheme({
         },
       },
     },
+    MuiTabs: {
+      styleOverrides: {
+        root: {
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        },
+        indicator: {
+          backgroundColor: '#8B5CF6',
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          color: 'rgba(255, 255, 255, 0.7)',
+          '&.Mui-selected': {
+            color: '#8B5CF6',
+          },
+          '&:hover': {
+            color: 'rgba(255, 255, 255, 0.9)',
+          },
+        },
+      },
+    },
   },
 });
 
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }) => {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`tabpanel-${index}`}
+      aria-labelledby={`tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ pt: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+};
+
 const AppContent: React.FC = () => {
   const [scrollY, setScrollY] = useState<number>(0);
+  const [tabValue, setTabValue] = useState<number>(0);
   const { isLoading, error, refetch } = useFirestoreData();
 
   useEffect(() => {
@@ -52,8 +102,12 @@ const AppContent: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
+
   // Calculate opacities and positions
-  const maxScroll = window.innerHeight * 0.75; // 3/4 of viewport height
+  const maxScroll = window.innerHeight * 0.8; // 4/5 of viewport height
   const pillOpacity = Math.max(0, 1 - (scrollY / 100)); // Fade out after ~2 scroll ticks
   const contentOpacity = Math.min(1, scrollY / maxScroll); // Fade in as user scrolls from 0 to 1
 
@@ -76,26 +130,77 @@ const AppContent: React.FC = () => {
         <ScrollPill opacity={pillOpacity} />
       </Box>
 
-      {/* Second Page (3/4 of viewport) */}
+      {/* Second Page */}
       <Box 
         className="second-page"
-        sx={{ backgroundColor: '#1B015E' }}
+        sx={{ 
+          backgroundColor: '#1B015E',
+          minHeight: '100vh',
+          position: 'relative'
+        }}
       >
-        {/* Charts Section */}
+        {/* Tabbed Content Container */}
         <Box 
-          className="charts-container"
-          sx={{ opacity: contentOpacity }}
+          sx={{ 
+            opacity: contentOpacity,
+            width: '100%',
+            px: { xs: 2, md: 4 },
+            pt: 2
+          }}
         >
-          <PieChart />
-          <BarChart />
-          <LineChart />
+          {/* Tab Navigation */}
+          <Box 
+            sx={{ 
+              borderBottom: 1, 
+              borderColor: 'divider', 
+              mb: 2
+            }}
+          >
+            <Tabs 
+              value={tabValue} 
+              onChange={handleTabChange} 
+              aria-label="dashboard tabs"
+              centered
+            >
+              <Tab label="Data Analytics" id="tab-0" aria-controls="tabpanel-0" />
+              <Tab label="Intelligence Hub" id="tab-1" aria-controls="tabpanel-1" />
+            </Tabs>
+          </Box>
+
+          {/* Data Analytics Tab */}
+          <TabPanel value={tabValue} index={0}>
+            {/* Charts Section */}
+            <Box className="charts-container">
+              <PieChart />
+              <BarChart />
+              <LineChart />
+            </Box>
+
+            {/* Data Table Section */}
+            <DataTable 
+              opacity={1} 
+              fetchError={error} 
+              isLoading={isLoading} 
+              refetch={refetch} 
+            />
+          </TabPanel>
+
+          {/* Intelligence Hub Tab */}
+          <TabPanel value={tabValue} index={1}>
+            <Box 
+              sx={{ 
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                minHeight: '400px',
+                flexDirection: 'column',
+                gap: 2
+              }}
+            >
+              <SalesInsightsDashboard/>
+            </Box>
+          </TabPanel>
         </Box>
-
-        {/* Data Table Section */}
-        <DataTable opacity={contentOpacity} fetchError={error} isLoading={isLoading} refetch={refetch} />
-
-        {/* Footer Space */}
-        <Box sx={{ height: 8 }} />
       </Box>
     </Box>
   );
