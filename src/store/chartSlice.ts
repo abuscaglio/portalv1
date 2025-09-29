@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { ChartState, PieChartData, BarChartData, LineChartData } from '../types';
+import { ChartState, PieChartData, BarChartData, LineChartData } from '../types/charts';
 
 // Updated interface to match your actual Firestore structure
 interface MonthlySales {
@@ -342,12 +342,12 @@ export const {
   setEmployees,
   setBarDataFromEmployees,
   setBarDataFromIndividualEmployee,
-  setLineDataFromEmployees, // NEW
-  setLineDataFromIndividualEmployee, // NEW
+  setLineDataFromEmployees,
+  setLineDataFromIndividualEmployee,
   setChartMode,
-  setLineChartMode, // NEW
+  setLineChartMode,
   setSelectedEmployeeId,
-  setSelectedLineEmployeeId, // NEW
+  setSelectedLineEmployeeId,
   setPieDataFromEmployees
 } = chartSlice.actions;
 
