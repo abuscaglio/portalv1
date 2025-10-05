@@ -8,7 +8,7 @@ import InsightModal from './InsightModal';
 import LoadingState from './LoadingState';
 import EmptyState from './EmptyState';
 import { SalesInsight } from '../../types/salesInsights';
-import { insightsEngine } from '../../service/InsightsEngine'; // Import the engine
+import { insightsEngine } from '../../service/insights/InsightsEngine'; // Import the engine
 
 const SalesInsightsDashboard: React.FC = () => {
   const [insights, setInsights] = useState<SalesInsight[]>([]);
@@ -28,7 +28,6 @@ const SalesInsightsDashboard: React.FC = () => {
         const generatedInsights = await insightsEngine.generateInsights();
         
         setInsights(generatedInsights);
-        console.log(`✅ Generated ${generatedInsights.length} insights`, generatedInsights);
       } catch (err) {
         console.error('Error fetching insights:', err);
         setError('Failed to generate insights. Using fallback data.');
