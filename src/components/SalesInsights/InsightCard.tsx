@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Users } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { SalesInsight } from '../../types/salesInsights';
 import { getInsightIcon, getSeverityStyle, getTypeColor } from '../../utils/salesInsightsHelpers';
 
@@ -106,12 +106,6 @@ const InsightCard: React.FC<InsightCardProps> = ({ insight, onClick }) => {
         }}>
           <Clock size={16} />
           <span>{insight.timeframe}</span>
-          {insight.employeeId && (
-            <>
-              <Users size={16} style={{ marginLeft: '8px' }} />
-              <span>Employee {insight.employeeId.slice(-3)}</span>
-            </>
-          )}
         </div>
         {insight.actionable && (
           <span style={{
