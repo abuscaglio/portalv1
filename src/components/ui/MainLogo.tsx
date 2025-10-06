@@ -118,8 +118,94 @@ const MainLogo: React.FC<LogoProps> = ({ className = '' }) => {
         position="upper-left"
         isVisible={activeQuadrant === 'upper-left'}
         title="Skills & Technologies"
-        content="React, TypeScript, Node.js, Python"
-      />
+      >
+        <style>{`
+          .quadrant-popup.upper-left .quadrant-content h3 {
+            border-bottom: 2px solid rgba(255, 255, 255, 0.4);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+          }
+        `}</style>
+        <div style={{ 
+          marginTop: '20px',
+          fontFamily: "'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif"
+        }}>
+          <h4 style={{ 
+            fontSize: '17px', 
+            fontWeight: '700', 
+            marginBottom: '10px',
+            marginTop: '0',
+            color: 'white',
+            letterSpacing: '0.3px'
+          }}>Front End</h4>
+          <div style={{ 
+            fontSize: '14px', 
+            lineHeight: '1.8',
+            marginLeft: '12px',
+            marginBottom: '18px',
+            color: 'rgba(255, 255, 255, 0.95)'
+          }}>
+            <div style={{ marginBottom: '6px' }}>- Javascript  - Typescript  - CSS  - html</div>
+            <div>- React  - React Native  - Tailwind  - Bootstrap</div>
+          </div>
+
+          <h4 style={{ 
+            fontSize: '17px', 
+            fontWeight: '700', 
+            marginBottom: '10px',
+            marginTop: '0',
+            color: 'white',
+            letterSpacing: '0.3px'
+          }}>Back End</h4>
+          <div style={{ 
+            fontSize: '14px', 
+            lineHeight: '1.8',
+            marginLeft: '12px',
+            marginBottom: '18px',
+            color: 'rgba(255, 255, 255, 0.95)'
+          }}>
+            <div>- Python  - Java  - Express.js</div>
+          </div>
+
+          <h4 style={{ 
+            fontSize: '17px', 
+            fontWeight: '700', 
+            marginBottom: '10px',
+            marginTop: '0',
+            color: 'white',
+            letterSpacing: '0.3px'
+          }}>Database</h4>
+          <div style={{ 
+            fontSize: '14px', 
+            lineHeight: '1.8',
+            marginLeft: '12px',
+            marginBottom: '18px',
+            color: 'rgba(255, 255, 255, 0.95)'
+          }}>
+            <div>- PostgreSQL  - MySQL  - MongoDB  - BigQuery</div>
+          </div>
+
+          <h4 style={{ 
+            fontSize: '17px', 
+            fontWeight: '700', 
+            marginBottom: '10px',
+            marginTop: '0',
+            color: 'white',
+            letterSpacing: '0.3px'
+          }}>Additional</h4>
+          <div style={{ 
+            fontSize: '14px', 
+            lineHeight: '1.8',
+            marginLeft: '12px',
+            color: 'rgba(255, 255, 255, 0.95)'
+          }}>
+            <div>- Docker  - Kubernetes  - GCP  - AWS</div>
+          </div>
+        </div>
+      </QuadrantPopup>
 
       <QuadrantPopup
         position="upper-right"

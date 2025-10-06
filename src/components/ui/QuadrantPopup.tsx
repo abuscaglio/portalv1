@@ -5,7 +5,8 @@ interface QuadrantPopupProps {
   position: 'upper-left' | 'upper-right' | 'lower-right' | 'lower-left';
   isVisible: boolean;
   title: string;
-  content: string;
+  content?: string;
+  children?: React.ReactNode;
   className?: string;
 }
 
@@ -14,6 +15,7 @@ const QuadrantPopup: React.FC<QuadrantPopupProps> = ({
   isVisible,
   title,
   content,
+  children,
   className = ''
 }) => {
   return (
@@ -22,7 +24,7 @@ const QuadrantPopup: React.FC<QuadrantPopupProps> = ({
     >
       <div className="quadrant-content">
         <h3>{title}</h3>
-        <p>{content}</p>
+        {children || <p>{content}</p>}
       </div>
     </div>
   );
