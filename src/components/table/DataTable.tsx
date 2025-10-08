@@ -106,7 +106,6 @@ const DataTable: React.FC<DataTableProps> = ({
       return Object.entries(columnFilters).every(([field, filterValue]) => {
         if (!filterValue) return true;
         
-        // Handle different field types
         let cellValue: string = '';
         
         switch (field) {

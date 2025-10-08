@@ -1,4 +1,3 @@
-// Chart data types
 export interface PieChartData {
   name: string;
   value: number;
@@ -7,7 +6,7 @@ export interface PieChartData {
 
 export interface BarChartData {
   month: string;
-  [tierName: string]: number | string; // Dynamic tier names as keys
+  [tierName: string]: number | string;
 }
 
 export interface LineChartData {
@@ -15,7 +14,6 @@ export interface LineChartData {
   value: number;
 }
 
-// Table data types
 export interface TableRow {
   id: number;
   col1: string;
@@ -30,7 +28,6 @@ export interface TableRow {
   col10: string;
 }
 
-// Redux state types
 export interface ChartState {
   pieData: PieChartData[];
   barData: BarChartData[];

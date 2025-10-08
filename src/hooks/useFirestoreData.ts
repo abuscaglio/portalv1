@@ -36,13 +36,10 @@ export const useFirestoreData = () => {
         return serializedData;
       });
       
-      // Update table data
       dispatch(setTableData(data));
       
-      // Update pie chart data
       dispatch(setPieDataFromEmployees(data));
 
-      // Update bar chart data
       dispatch(setBarDataFromEmployees(data));
 
       dispatch(setLineDataFromEmployees(data));

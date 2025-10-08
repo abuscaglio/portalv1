@@ -12,20 +12,17 @@ const MainLogo: React.FC<LogoProps> = ({ className = '' }) => {
   const badgeRef = useRef<HTMLDivElement>(null);
   const lastAngleRef = useRef(0);
 
-  // Function to normalize angle to -180 to 180 range
   const normalizeAngle = (angle: number): number => {
     while (angle > 180) angle -= 360;
     while (angle < -180) angle += 360;
     return angle;
   };
 
-  // Function to find the shortest path between two angles
   const getShortestAnglePath = (from: number, to: number): number => {
     const diff = normalizeAngle(to - from);
     return from + diff;
   };
 
-  // Function to determine which quadrant the angle is in
   const getActiveQuadrant = (angle: number): string | null => {
     const normalizedAngle = normalizeAngle(angle);
     
@@ -52,16 +49,13 @@ const MainLogo: React.FC<LogoProps> = ({ className = '' }) => {
         const deltaX = e.clientX - badgeCenterX;
         const deltaY = e.clientY - badgeCenterY;
         
-        // Calculate angle in degrees (0 degrees = top, clockwise)
         const newAngle = Math.atan2(deltaX, -deltaY) * (180 / Math.PI);
         
-        // Find the shortest path to the new angle
         const smoothAngle = getShortestAnglePath(lastAngleRef.current, newAngle);
         
         setCursorAngle(smoothAngle);
         lastAngleRef.current = smoothAngle;
         
-        // Determine which quadrant is active
         setActiveQuadrant(getActiveQuadrant(smoothAngle));
       }
     };

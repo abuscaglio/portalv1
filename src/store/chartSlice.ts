@@ -1,7 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { ChartState, PieChartData, BarChartData, LineChartData } from '../types/charts';
 
-// Updated interface to match your actual Firestore structure
 interface MonthlySales {
   sold: number;
   target: number;
@@ -26,15 +25,13 @@ interface FirestoreEmployee {
   };
 }
 
-// Function to transform Firestore data for the bar chart (by tier)
 export const transformEmployeeDataForBarChart = (employees: FirestoreEmployee[]): BarChartData[] => {
-  // Define month order for proper sorting
+
   const monthOrder = [
     'january', 'february', 'march', 'april', 'may', 'june',
     'july', 'august', 'september', 'october', 'november', 'december'
   ];
 
-  // Group employees by tier
   const tierGroups: { [tier: string]: FirestoreEmployee[] } = {};
   employees.forEach(employee => {
     const tier = employee.role;
@@ -44,24 +41,20 @@ export const transformEmployeeDataForBarChart = (employees: FirestoreEmployee[])
     tierGroups[tier].push(employee);
   });
 
-  // Transform data by month
   const chartData: BarChartData[] = monthOrder.map(month => {
     const monthData: BarChartData = { 
-      month: month.charAt(0).toUpperCase() + month.slice(1) // Capitalize month name
+      month: month.charAt(0).toUpperCase() + month.slice(1) 
     };
 
-    // Calculate total sales per tier for this month
     Object.keys(tierGroups).forEach(tier => {
       const totalSalesForTier = tierGroups[tier].reduce((sum, employee) => {
-        // Access the sold property from the monthly sales object
         const monthSalesData = employee.sales.monthly[month];
         const monthlySales = monthSalesData?.sold || 0;
         return sum + monthlySales;
       }, 0);
       
-      // Clean up tier name for display (remove "Sales - " prefix if it exists)
       const cleanTierName = tier.replace('Sales - ', '');
-      monthData[cleanTierName] = Math.round(totalSalesForTier * 100) / 100; // Round to 2 decimal places
+      monthData[cleanTierName] = Math.round(totalSalesForTier * 100) / 100; 
     });
 
     return monthData;
@@ -70,29 +63,25 @@ export const transformEmployeeDataForBarChart = (employees: FirestoreEmployee[])
   return chartData;
 };
 
-// Function to transform individual employee data for the bar chart
 export const transformIndividualEmployeeDataForBarChart = (employee: FirestoreEmployee): BarChartData[] => {
-  // Define month order for proper sorting
   const monthOrder = [
     'january', 'february', 'march', 'april', 'may', 'june',
     'july', 'august', 'september', 'october', 'november', 'december'
   ];
 
-  // Transform data by month for individual employee
   const chartData: BarChartData[] = monthOrder.map(month => {
     const monthData: BarChartData = { 
-      month: month.charAt(0).toUpperCase() + month.slice(1) // Capitalize month name
+      month: month.charAt(0).toUpperCase() + month.slice(1)
     };
 
-    // Get sales data for this month (sold and target)
     const monthSalesData = employee.sales.monthly[month];
     const monthlySales = monthSalesData?.sold || 0;
     const monthlyTarget = monthSalesData?.target || 0;
     
     const employeeName = `${employee.first_name} ${employee.last_name}`;
     
-    monthData[employeeName] = Math.round(monthlySales * 100) / 100; // Round to 2 decimal places
-    monthData['Target'] = Math.round(monthlyTarget * 100) / 100; // Include monthly target
+    monthData[employeeName] = Math.round(monthlySales * 100) / 100; 
+    monthData['Target'] = Math.round(monthlyTarget * 100) / 100; 
 
     return monthData;
   });
@@ -100,14 +89,12 @@ export const transformIndividualEmployeeDataForBarChart = (employee: FirestoreEm
   return chartData;
 };
 
-// NEW: Function to transform data for line chart - Target Achievement Rate by Tier
 export const transformEmployeeDataForLineChart = (employees: FirestoreEmployee[]): LineChartData[] => {
   const monthOrder = [
     'january', 'february', 'march', 'april', 'may', 'june',
     'july', 'august', 'september', 'october', 'november', 'december'
   ];
 
-  // Group employees by tier
   const tierGroups: { [tier: string]: FirestoreEmployee[] } = {};
   employees.forEach(employee => {
     const tier = employee.role.replace('Sales - ', ''); // Clean tier name
@@ -117,13 +104,11 @@ export const transformEmployeeDataForLineChart = (employees: FirestoreEmployee[]
     tierGroups[tier].push(employee);
   });
 
-  // Calculate achievement rate by month
   const chartData: LineChartData[] = monthOrder.map(month => {
     const monthData: any = { 
       name: month.charAt(0).toUpperCase() + month.slice(1) // Capitalize month name
     };
 
-    // Calculate achievement rate for each tier
     Object.keys(tierGroups).forEach(tier => {
       let totalSold = 0;
       let totalTarget = 0;
@@ -136,9 +121,8 @@ export const transformEmployeeDataForLineChart = (employees: FirestoreEmployee[]
         }
       });
 
-      // Calculate achievement rate as percentage
       const achievementRate = totalTarget > 0 ? (totalSold / totalTarget) * 100 : 0;
-      monthData[tier] = Math.round(achievementRate * 100) / 100; // Round to 2 decimal places
+      monthData[tier] = Math.round(achievementRate * 100) / 100; 
     });
 
     return monthData;
@@ -147,25 +131,21 @@ export const transformEmployeeDataForLineChart = (employees: FirestoreEmployee[]
   return chartData;
 };
 
-// NEW: Function to transform individual employee data for line chart - Target Achievement Rate
 export const transformIndividualEmployeeDataForLineChart = (employee: FirestoreEmployee): LineChartData[] => {
   const monthOrder = [
     'january', 'february', 'march', 'april', 'may', 'june',
     'july', 'august', 'september', 'october', 'november', 'december'
   ];
 
-  // Transform data by month for individual employee achievement rate
   const chartData: LineChartData[] = monthOrder.map(month => {
     const monthData: any = { 
-      name: month.charAt(0).toUpperCase() + month.slice(1) // Capitalize month name
+      name: month.charAt(0).toUpperCase() + month.slice(1) 
     };
 
-    // Get sales data for this month (sold and target)
     const monthSalesData = employee.sales.monthly[month];
     const monthlySales = monthSalesData?.sold || 0;
     const monthlyTarget = monthSalesData?.target || 0;
     
-    // Calculate achievement rate as percentage
     const achievementRate = monthlyTarget > 0 ? (monthlySales / monthlyTarget) * 100 : 0;
     const employeeName = `${employee.first_name} ${employee.last_name}`;
     
@@ -208,13 +188,12 @@ export const getYearlySales = (employee: FirestoreEmployee): { sales: number; ta
   };
 };
 
-// Enhanced state interface
 interface EnhancedChartState extends ChartState {
   selectedEmployeeId: string | null;
-  selectedLineEmployeeId: string | null; // NEW: For line chart employee selection
+  selectedLineEmployeeId: string | null;
   employees: FirestoreEmployee[];
-  chartMode: 'tier' | 'individual'; // Track current display mode for bar chart
-  lineChartMode: 'tier' | 'individual'; // NEW: Track current display mode for line chart
+  chartMode: 'tier' | 'individual';
+  lineChartMode: 'tier' | 'individual';
 }
 
 const initialState: EnhancedChartState = {
@@ -256,57 +235,46 @@ const chartSlice = createSlice({
         state.lineData[index] = data;
       }
     },
-    // Set employees data (called when fetching from Firestore)
     setEmployees: (state, action: PayloadAction<FirestoreEmployee[]>) => {
       state.employees = action.payload;
     },
-    // Set data from Firestore employees (tier view)
     setBarDataFromEmployees: (state, action: PayloadAction<FirestoreEmployee[]>) => {
       state.employees = action.payload;
       state.barData = transformEmployeeDataForBarChart(action.payload);
       state.chartMode = 'tier';
       state.selectedEmployeeId = null;
     },
-    // Set data from individual employee
     setBarDataFromIndividualEmployee: (state, action: PayloadAction<FirestoreEmployee>) => {
       state.barData = transformIndividualEmployeeDataForBarChart(action.payload);
       state.chartMode = 'individual';
       state.selectedEmployeeId = action.payload.id;
     },
-    // NEW: Set line chart data from employees (tier view)
     setLineDataFromEmployees: (state, action: PayloadAction<FirestoreEmployee[]>) => {
       state.employees = action.payload;
       state.lineData = transformEmployeeDataForLineChart(action.payload);
       state.lineChartMode = 'tier';
       state.selectedLineEmployeeId = null;
     },
-    // NEW: Set line chart data from individual employee
     setLineDataFromIndividualEmployee: (state, action: PayloadAction<FirestoreEmployee>) => {
       state.lineData = transformIndividualEmployeeDataForLineChart(action.payload);
       state.lineChartMode = 'individual';
       state.selectedLineEmployeeId = action.payload.id;
     },
-    // Set chart mode
     setChartMode: (state, action: PayloadAction<'tier' | 'individual'>) => {
       state.chartMode = action.payload;
     },
-    // NEW: Set line chart mode
     setLineChartMode: (state, action: PayloadAction<'tier' | 'individual'>) => {
       state.lineChartMode = action.payload;
     },
-    // Set selected employee ID
     setSelectedEmployeeId: (state, action: PayloadAction<string | null>) => {
       state.selectedEmployeeId = action.payload;
     },
-    // NEW: Set selected line chart employee ID
     setSelectedLineEmployeeId: (state, action: PayloadAction<string | null>) => {
       state.selectedLineEmployeeId = action.payload;
     },
-    // Transform and set pie data from employees (e.g., by tier performance)
     setPieDataFromEmployees: (state, action: PayloadAction<FirestoreEmployee[]>) => {
       const tierPerformance: { [tier: string]: number } = {};
       
-      // Define colors for different tiers
       const tierColors: { [tier: string]: string } = {
         'Tier 1': '#8B5CF6',
         'Tier 2': '#A78BFA', 
@@ -327,7 +295,7 @@ const chartSlice = createSlice({
       state.pieData = Object.entries(tierPerformance).map(([name, value]) => ({
         name,
         value: Math.round(value * 100) / 100,
-        color: tierColors[name] || '#888888' // Default color if tier not found
+        color: tierColors[name] || '#888888'
       }));
     }
   }

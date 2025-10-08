@@ -1,4 +1,3 @@
-// src/components/SalesInsights/SalesInsightsDashboard.tsx
 import React, { useState, useEffect } from 'react';
 import { Brain } from 'lucide-react';
 import InsightStats from './InsightStats';
@@ -17,14 +16,12 @@ const SalesInsightsDashboard: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'anomaly' | 'prediction' | 'recommendation' | 'alert'>('all');
   const [selectedInsight, setSelectedInsight] = useState<SalesInsight | null>(null);
 
-  // Fetch real insights from the engine
   useEffect(() => {
     const fetchInsights = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        // Generate insights from your Firestore data
         const generatedInsights = await insightsEngine.generateInsights();
         
         setInsights(generatedInsights);
@@ -32,7 +29,6 @@ const SalesInsightsDashboard: React.FC = () => {
         console.error('Error fetching insights:', err);
         setError('Failed to generate insights. Using fallback data.');
         
-        // Fallback to mock data if there's an error
         setInsights(getMockInsights());
       } finally {
         setLoading(false);

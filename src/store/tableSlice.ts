@@ -1,6 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-// Updated types to match your new Firebase structure
 interface Location {
   city: string;
   state: string;
@@ -42,7 +41,6 @@ export interface TableState {
   sortModel: { colId: string; sort: 'asc' | 'desc' }[];
 }
 
-// Helper function to get current month name in lowercase
 const getCurrentMonth = (): string => {
   const monthNames = [
     'january', 'february', 'march', 'april', 'may', 'june',
@@ -52,22 +50,18 @@ const getCurrentMonth = (): string => {
   return monthNames[currentDate.getMonth()];
 };
 
-// Helper function to calculate current month's sales and targets
 const calculateCurrentMonthData = (sales: Sales) => {
   const currentMonth = getCurrentMonth();
   
-  // Find current month data - try exact match first, then case-insensitive
   let monthData: MonthlySales | undefined = sales.monthly[currentMonth];
   
   if (!monthData) {
-    // Try to find month with case-insensitive search
     const monthKey = Object.keys(sales.monthly).find(
       key => key.toLowerCase() === currentMonth.toLowerCase()
     );
     monthData = monthKey ? sales.monthly[monthKey] : undefined;
   }
   
-  // Calculate total yearly sales from all months
   const yearlyData = Object.values(sales.monthly);
   const yearly_sales = yearlyData.reduce((total, month) => total + (month.sold || 0), 0);
   
@@ -78,7 +72,6 @@ const calculateCurrentMonthData = (sales: Sales) => {
   };
 };
 
-// Transform Firebase data to include computed fields
 const transformFirebaseData = (firebaseData: any[]): TableRow[] => {
   return firebaseData.map(item => {
     const computedData = calculateCurrentMonthData(item.sales);
@@ -103,7 +96,6 @@ const tableSlice = createSlice({
   initialState,
   reducers: {
     setTableData: (state, action: PayloadAction<any[]>) => {
-      // Transform the Firebase data and add computed fields
       const transformedData = transformFirebaseData(action.payload);
       state.data = transformedData;
       state.filteredData = transformedData;
@@ -119,7 +111,6 @@ const tableSlice = createSlice({
         state.filteredData = state.data.filter(row => {
           const searchText = action.payload.toLowerCase();
           
-          // Search in basic fields
           const basicMatch = 
             row.role?.toLowerCase().includes(searchText) ||
             row.first_name?.toLowerCase().includes(searchText) ||
@@ -131,7 +122,6 @@ const tableSlice = createSlice({
             row.yearly_sales?.toString().includes(searchText) ||
             row.sales?.yearly_target?.toString().includes(searchText);
           
-          // Search in commendations array
           const commendationMatch = row.commendations?.some(commendation =>
             commendation.toLowerCase().includes(searchText)
           );
@@ -148,7 +138,6 @@ const tableSlice = createSlice({
     setSortModel: (state, action: PayloadAction<{ colId: string; sort: 'asc' | 'desc' }[]>) => {
       state.sortModel = action.payload;
       
-      // Apply sorting to filteredData
       if (action.payload.length > 0) {
         const { colId, sort } = action.payload[0];
         

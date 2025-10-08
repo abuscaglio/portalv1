@@ -61,9 +61,7 @@ const PieChart: React.FC<PieChartProps> = ({ opacity = 1, className = '' }) => {
     </Box>
   );
 
-  // Custom tooltip formatter function
   const formatTooltip = (value: number, name: string) => {
-    // Format the value as currency with 2 decimal places
     const formattedValue = `$${value.toLocaleString('en-US', { 
       minimumFractionDigits: 2, 
       maximumFractionDigits: 2 
@@ -72,7 +70,6 @@ const PieChart: React.FC<PieChartProps> = ({ opacity = 1, className = '' }) => {
     return [formattedValue, name];
   };
 
-  // Format currency for display
   const formatCurrency = (amount: number) => {
     return `$${amount.toLocaleString('en-US', { 
       minimumFractionDigits: 2, 

@@ -39,9 +39,6 @@ export class InsightsUtils {
     return `${prefix}-${hash}`;
   }
 
-  /**
-   * Simple string hash function for deterministic IDs
-   */
   private static simpleHash(str: string): string {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
